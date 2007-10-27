@@ -1,3 +1,8 @@
+-- |The archive command needs to run as root so it can create any file
+-- with any ownership, special files, etc.  This makes it a security
+-- risk.  It should use a configuration file to set the destination
+-- directory so a malicious user can't pass it arguments to destroy
+-- other parts of the system.
 module Main where
 
 import Control.Exception
@@ -21,7 +26,8 @@ main :: IO ()
 main =
     try getOptions >>=
     either (\ e -> usage (show e) >> error (show e))
-           (\ (options, original, backup) -> archive options original backup)
+           (\ (options, original, backup) -> archive options original backup) >>=
+    either (error . show) (hPutStrLn stderr . show)
 
 getOptions :: IO ([Option], String, String)
 getOptions =

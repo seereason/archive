@@ -15,6 +15,9 @@ import		 Backup
 import		 Archive
 import		 GHC.Read(readEither)
 import		 System.IO
+import		 Linspire.Unix.Process
+import qualified Data.ByteString as B
+import		 Data.Char
 
 main :: IO ()
 main = CGI.runCGI (CGI.handleErrors $ cgiMain)
@@ -25,68 +28,104 @@ cgiMain =
        inputs <- CGI.getInputs
        moreInputs <- liftIO getEnvironment
        let cgivars = inputs ++ moreInputs
-       cgivars' <- CGI.getInputs
-       liftIO (do result <- try (application path cgivars)
-                  case result of
-                    Left e ->
-                        do return . show $ (h1 (stringToHtml "error") +++ 
-                                               stringToHtml (show e) +++ br +++
-                                               stringToHtml (show cgivars'))
-                    Right s -> return s) >>= CGI.output
-
--- |Compare the values in the configuration file with the values in the CGI
--- parameters.  If they are different, update the configuration file.  Then
--- perform any requested backups.  Finally, output the resulting HTML.
-application :: FilePath -> [(String, String)] -> IO String
-application _ cgivars =
-    updateConfig cgivars >>=
-    useConfig cgivars >>=
-    return . show . (+++ (cgivarHtml cgivars))
+       do result <- application path cgivars
+          case result of
+            Left e ->
+                CGI.output . show $ (h1 (stringToHtml "error") +++ 
+                                     stringToHtml (show e) +++ br +++
+                                     cgivarHtml cgivars)
+            Right s -> CGI.output (show (s +++ cgivarHtml cgivars))
     where
       cgivarHtml cgivars =
           case {- lookup "show_cgi_vars" cgivars -} Just 1 of
             Just _ -> pre (stringToHtml (unlines (map show cgivars)))
             Nothing -> noHtml
 
+-- |Compare the values in the configuration file with the values in the CGI
+-- parameters.  If they are different, update the configuration file.  Then
+-- perform any requested backups.  Finally, output the resulting HTML.
+application :: FilePath -> [(String, String)] -> CGI.CGI (Either Html Html)
+application _ cgivars = liftIO (updateConfig cgivars >>= useConfig cgivars)
+
+mergeTry x = try x >>= return . either (Left . stringToHtml . ("mergeTry: " ++) . show) id
+
 -- |Load the configuration from a file, update it using the values
 -- passed from the CGI form, save it, and return it.
 updateConfig :: [(String, String)] -> IO (Either Html BackupSpec)
 updateConfig cgivars =
-    checkConfigDirectory >>=
-    checkConfigFile >>=
-    loadConfigFile cgivars >>=
-    return . modifyConfig cgivars >>=
-    saveConfig
+    mergeTry (checkConfigDirectory >>=
+              checkConfigFile configPath >>=
+              loadConfigFile cgivars >>=
+              return . modifyConfig cgivars >>=
+              saveConfig)
 
 -- |Perform any operations requested, and then generate the new HTML.
-useConfig :: [(String, String)] -> Either Html BackupSpec -> IO Html
-useConfig _ (Left html) = return html
+useConfig :: [(String, String)] -> Either Html BackupSpec -> IO (Either Html Html)
+useConfig _ (Left html) = return (Left html)
 useConfig cgivars (Right backups) =
-    do messages <- mapM runBackup (zip [1..] (volumes backups)) >>= return . concatHtml
-       return (form (table (tr (th (stringToHtml "ID") ! [intAttr "rowspan" 2] +++
-                                th (stringToHtml "Original") ! [intAttr "colspan" 3] +++
-                                th (stringToHtml "Archives") ! [intAttr "colspan" 3] +++
-                                th (stringToHtml "Enabled") ! [intAttr "rowspan" 2] +++
-                                th (stringToHtml "Backup") ! [intAttr "rowspan" 2]) +++
-                            tr (th (stringToHtml "User") +++
-                                th (stringToHtml "Host") +++
-                                th (stringToHtml "Folder") ! [strAttr "size" "30%"] +++
-                                th (stringToHtml "User") +++
-                                th (stringToHtml "Host") +++
-                                th (stringToHtml "Folder")) +++
-                            toHtml backups) ! [intAttr "border" 1, strAttr "width" "100%"])
-               ! [strAttr "method" "post"] +++ br +++ messages)
+    do messages <- mapM runBackup (zip [1..] (volumes backups))
+       return (Right (form (table (tr (th (stringToHtml "ID") ! [intAttr "rowspan" 2] +++
+                                       th (stringToHtml "Original") ! [intAttr "colspan" 3] +++
+                                       th (stringToHtml "Archives") ! [intAttr "colspan" 2] +++
+                                       th (stringToHtml "Enabled") ! [intAttr "rowspan" 2] +++
+                                       th (stringToHtml "Backup") ! [intAttr "rowspan" 2]) +++
+                                   tr (th (stringToHtml "User") +++
+                                       th (stringToHtml "Host") +++
+                                       th (stringToHtml "Folder") ! [strAttr "size" "30%"] +++
+                                       th (stringToHtml "Host") +++
+                                       th (stringToHtml "Folder")) +++
+                                   toHtml backups) ! [intAttr "border" 1, strAttr "width" "100%"])
+                      ! [strAttr "method" "post"] +++ br +++ concatHtml (map showMessage messages)))
     where
+      runBackup :: (Int, VolumeSpec) -> IO (Maybe (Either Html Html))
       runBackup (index, volume) =
           case lookup ("Run" ++ show index) cgivars of
             Just "1" ->
-                do result <- archive [] (uriToString id (original volume) "") (uriToString id (copies volume) "")
+                do case (uriAuthority (original volume), uriAuthority (copies volume)) of
+                     (_, Nothing) -> return . Just . Left . stringToHtml $ "Invalid destination URI: " ++ show (copies volume)
+                     (Nothing, _) -> return . Just . Left . stringToHtml $ "Invalid original URI: " ++ show (original volume)
+                     (Just orig, Just copy) ->
+                            -- The archive commands needs to be run from the machine where the
+                            -- copy will be created, so ssh there.
+                         do let copyAddr = uriUserInfo copy ++ uriRegName copy
+                            let origAddr = uriUserInfo orig ++ uriRegName orig
+                            let cmd = ("set -x && " ++
+                                       ssh ++ copyAddr ++ " '"
+                                       ++ (archiveBin ++ " " ++
+                                           "\"" ++ origAddr ++ ":" ++ uriPath (original volume) ++ "\"" ++ " " ++
+                                           "\"" ++ uriPath (copies volume) ++ "\"") ++
+                                       "'")
+                            result <- lazyCommand cmd []
+                            let output = stringToHtml . byteStringToString . B.concat . outputOnly $ result
+                            case exitCodeOnly result of
+                              (ExitSuccess : _) -> return . Just . Right . pre $ (stringToHtml cmd +++ br +++ stringToHtml " ->\n" +++ output)
+                              x -> return . Just . Left . pre $ stringToHtml ("Failure: " ++ cmd ++ " -> " ++ show x ++ "\n") +++ output
+{-
+                do result <- archiveRemote [] (original volume) (copies volume)
                    let message = stringToHtml ("archive " ++ host (original volume) ++ ":" ++ folder (original volume) ++
-                                               " " ++ host (copies volume) ++ ":" ++ folder (copies volume) ++
-                                               " -> " ++ show result) +++ br
-                   return message
-                --archive [] (show (original volume)) (show (archive volume))
-            _ -> return noHtml
+                                               " " ++ host (copies volume) ++ ":" ++ folder (copies volume) ++ " -> ")
+                   case result of
+                     Left e -> return . Just . Left $ message +++ br +++ stringToHtml ("backup failed: " ++ show e) +++ br
+                     Right r -> return . Just . Right $ message +++ stringToHtml (show r) +++ br
+-}
+            _ -> return Nothing
+      showMessage Nothing = noHtml
+      showMessage (Just (Left e)) = font e ! [strAttr "color" "red"]
+      showMessage (Just (Right h)) = h +++ br
+
+scp = "scp -o 'PreferredAuthentications hostbased,publickey' "
+ssh = "ssh -o 'PreferredAuthentications hostbased,publickey' "
+archiveBin = "/srv/backups/archive"
+archiveTmp = "/tmp/archive"
+archiveUser = "david"
+
+{-
+archiveRemote :: [Option] -> URI -> URI -> IO (Either IOError String)
+archiveRemote options original backups =
+-}
+
+byteStringToString :: B.ByteString -> String
+byteStringToString b = map (chr . fromInteger . toInteger) . B.unpack $ b
 
 empty = Backups { volumes = [] }
 
@@ -150,14 +189,13 @@ checkConfigDirectory =
                     (return . Right $ ()) else
                     (return . Left . stringToHtml $ "Missing directory on server: " ++ topDir)
 
-
-checkConfigFile :: Either Html () -> IO (Either Html FilePath)
-checkConfigFile (Left html) = return (Left html)
-checkConfigFile (Right ()) =
-    doesFileExist configPath >>=
+checkConfigFile :: FilePath -> Either Html () -> IO (Either Html FilePath)
+checkConfigFile _ (Left html) = return (Left html)
+checkConfigFile path (Right ()) =
+    doesFileExist path >>=
     \ exists -> if exists then
-                    (return . Right $ configPath) else
-                    (return . Left . stringToHtml $ "Configuration file does not exist: " ++ configPath)
+                    (return . Right $ path) else
+                    (return . Left . stringToHtml $ "Configuration file does not exist: " ++ path)
 
 loadConfigFile :: [(String, String)] -> Either Html FilePath -> IO (Either Html BackupSpec)
 loadConfigFile cgivars path =
@@ -190,8 +228,8 @@ modifyConfig cgivars (Right oldBackups)
       modifyVolume (index, volume) =
           case map (\ s -> lookup s cgivars) (map (++ (show index))
                                               ["OriginalUser", "OriginalHost", "OriginalFolder",
-                                               "ArchiveUser", "ArchiveHost", "ArchiveFolder"]) of
-            [Just ou, Just oh, Just op, Just au, Just ah, Just ap] ->
+                                               "ArchiveHost", "ArchiveFolder"]) of
+            [Just ou, Just oh, Just op, Just ah, Just ap] ->
                 volume { original = URI { uriScheme = "rsync:"
                                         , uriAuthority = Just (URIAuth { uriUserInfo = (ou ++ "@")
                                                                        , uriRegName = oh
@@ -200,7 +238,7 @@ modifyConfig cgivars (Right oldBackups)
                                         , uriQuery = ""
                                         , uriFragment = "" }
                        , copies = URI { uriScheme = "rsync:"
-                                      , uriAuthority = Just (URIAuth { uriUserInfo = (au ++ "@")
+                                      , uriAuthority = Just (URIAuth { uriUserInfo = (archiveUser ++ "@")
                                                                      , uriRegName = ah
                                                                      , uriPort = "" })
                                       , uriPath = ap
@@ -212,9 +250,9 @@ modifyConfig cgivars (Right oldBackups)
             _ -> volume
       createVolume oldBackups =
           case map (\ s -> lookup s cgivars) ["OriginalHost", "OriginalUser", "OriginalFolder",
-                                              "ArchiveHost", "ArchiveUser", "ArchiveFolder"] of
-            [Just "", Just "", Just "", Just "", Just "", Just ""] -> oldBackups
-            [Just oh, Just ou, Just op, Just ah, Just au, Just ap] ->
+                                              "ArchiveHost", "ArchiveFolder"] of
+            [Just "", Just "", Just "", Just "", Just ""] -> oldBackups
+            [Just oh, Just ou, Just op, Just ah, Just ap] ->
                 let newVolume = Volume { index = length (volumes oldBackups) + 1
                                        , original = URI { uriScheme = "rsync:"
                                                         , uriAuthority = Just (URIAuth { uriUserInfo = (ou ++ "@")
@@ -224,7 +262,7 @@ modifyConfig cgivars (Right oldBackups)
                                                         , uriQuery = ""
                                                         , uriFragment = "" }
                                        , copies = URI { uriScheme = "rsync:"
-                                                      , uriAuthority = Just (URIAuth { uriUserInfo = (au ++ "@")
+                                                      , uriAuthority = Just (URIAuth { uriUserInfo = (archiveUser ++ "@")
                                                                                      , uriRegName = ah
                                                                                      , uriPort = "" })
                                                       , uriPath = ap

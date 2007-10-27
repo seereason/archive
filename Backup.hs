@@ -51,7 +51,6 @@ instance HTML VolumeSpec where
         td (textfield ("OriginalUser" ++ show (index volume)) ! [strAttr "value" (user (original volume)), intAttr "size" 15]) +++
         td (textfield ("OriginalHost" ++ show (index volume)) ! [strAttr "value" (host (original volume)), intAttr "size" 15]) +++
         td (textfield ("OriginalFolder" ++ show (index volume)) ! [strAttr "value" (folder (original volume)), strAttr "size" "30%"]) +++
-        td (textfield ("ArchiveUser" ++ show (index volume)) ! [strAttr "value" (user (copies volume)), intAttr "size" 15]) +++
         td (textfield ("ArchiveHost" ++ show (index volume)) ! [strAttr "value" (host (copies volume)), intAttr "size" 15]) +++
         td (textfield ("ArchiveFolder" ++ show (index volume)) ! [strAttr "value" (folder (copies volume)), strAttr "size" "30%"]) +++
         td (checkbox ("Enabled" ++ show (index volume)) "1"
@@ -80,7 +79,6 @@ newVolumeForm =
         td (textfield "OriginalUser" ! [intAttr "size" 15]) ! valueAttr "OriginalUser" +++
         td (textfield "OriginalHost" ! [intAttr "size" 15]) ! valueAttr "OriginalHost" +++
         td (textfield "OriginalFolder") ! valueAttr "OriginalFolder" +++
-        td (textfield "ArchiveUser" ! [intAttr "size" 15]) ! valueAttr "ArchiveUser" +++
         td (textfield "ArchiveHost" ! [intAttr "size" 15]) ! valueAttr "ArchiveHost" +++
         td (textfield "ArchiveFolder") ! valueAttr "ArchiveFolder" +++
         td (primHtmlChar "nbsp") +++
@@ -90,7 +88,7 @@ newVolumeForm =
             ! [strAttr "type" "submit",
                strAttr "title" "Go",
                strAttr "name" "submit",
-               strAttr "value" "1"]) ! [intAttr "colspan" 4] +++
-        td (primHtmlChar "nbsp"))
+               strAttr "value" "1"]) ! [intAttr "colspan" 5] +++
+        td (primHtmlChar "nbsp") ! [intAttr "colspan" 2])
     where
       valueAttr _ = [] -- maybe [] (\ s -> [strAttr "value" s]) (lookup name cgivars)
