@@ -3,6 +3,14 @@
 -- risk.  It should use a configuration file to set the destination
 -- directory so a malicious user can't pass it arguments to destroy
 -- other parts of the system.
+-- 
+-- The command
+--
+--   archive <user>@<host>:<path> <dest>
+--
+-- Creates a copy of the directory in the first argument at
+--
+--   <dest>/<date>
 module Main where
 
 import Control.Exception

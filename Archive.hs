@@ -5,6 +5,7 @@ module Archive
     ) where
 
 import Data.List
+import System.FilePath
 import System.Time
 import System.Locale
 import System.Directory
@@ -44,40 +45,17 @@ archive :: [Option] -> String -> String -> IO (Either IOError UpdateResult)
 archive options original backupDirectory =
     -- Remove any incomplete archives.  These are left by runs that died
     -- while the older archive was being copied.
-    cleanup >>
+    removeIncomplete options backupDirectory' >>
     -- Get the timeofday to decide where to put the archive
-    getDate >>=
+    getClockTime >>= toCalendarTime >>= return . Date . formatCalendarTime defaultTimeLocale "%Y%m%d" >>=
     -- Create a copy of the latest complete archive with today's
     -- date and the outofdate prefix.
-    linkCopy >>=
+    linkToLatest options backupDirectory' >>=
     -- Rsync with the remote directory.
-    updateCopy
+    either (return . Left) (updateFromOriginal options original' backupDirectory')
     where
-      cleanup = removeIncomplete options backupDirectory
-      getDate = getClockTime >>= toCalendarTime >>= return . Date . formatCalendarTime defaultTimeLocale "%Y%m%d"
-      linkCopy :: Date -> IO (Either IOError Date)
-      linkCopy today = linkToLatest options backupDirectory today
-      updateCopy :: Either IOError Date -> IO (Either IOError UpdateResult) 
-      updateCopy (Left message) = return (Left message)
-      updateCopy (Right today) = updateFromOriginal options original backupDirectory today
-
-{-
-archive :: [Option] -> String -> String -> IO ()
-archive options original backupDirectory =
-    do today <- getClockTime >>= toCalendarTime >>= return . formatCalendarTime defaultTimeLocale "%Y%m%d"
-       -- If the ALWAYS flag is set we may need to create a directory with hours
-       -- minutes and seconds in the name.
-       hPutStrLn stderr (original ++ " -> " ++ backupDirectory ++ today)
-       createDirectoryIfMissing True backupDirectory
-       -- Remove any incomplete archives.  These are left by runs that died
-       -- while the older archive was being copied.
-       removeIncomplete options backupDirectory
-       -- Create a copy of the latest complete archive with today's
-       -- date and the outofdate prefix.
-       linkToLatest options backupDirectory today
-       -- Now we need to do the rsync from the remote directory.
-       updateFromOriginal options original backupDirectory today
--}
+      backupDirectory' = dropTrailingPathSeparator backupDirectory
+      original' = dropTrailingPathSeparator original
 
 removeIncomplete options backupDirectory =
     try (getDirectoryContents backupDirectory) >>=
@@ -94,77 +72,52 @@ removeIncomplete options backupDirectory =
             Nothing -> Nothing
             _ -> error "internal error"
 
---removeIncomplete :: [Option] -> String -> IO ()
-{-
-removeIncomplete options backupDirectory =
-    getDirectoryContents backupDirectory >>= return . filter isIncomplete  >>= mapM removeArchive
-{-
-    do result <- try (getDirectoryContents backupDirectory)
-       let dirs = case result of
-                    (Left e) -> if isDoesNotExistError e then [] else error ("Unexpected excption: " ++ show e)
-                    (Right r) -> r
-       mapM_ removeArchive (filter isIncomplete dirs) >>= return . Right
--}
-    where
-      isIncomplete name = maybe False (== "incomplete.") . archivePrefix $ name
-      removeArchive name = command options ("rm -rf " ++ backupDirectory ++ name)
-      archivePrefix name =
-          case matchRegex archiveNameRE name of
-            Just [prefix, _] -> Just prefix
-            Nothing -> Nothing
-            _ -> error "internal error"
--}
-
+-- Create a new archive which is hard linked to the most recent complete archive.
 linkToLatest :: [Option] -> FilePath -> Date -> IO (Either IOError Date)
-linkToLatest options backupDirectory today =
-    try (getDirectoryContents backupDirectory >>= return . filter isComplete) >>=
+linkToLatest options dest today =
+    -- Get a list of all the archives that are not incomplete, that
+    -- is, completed links to a previous archive, but not necessarily
+    -- fully updated from the original.
+    try (getDirectoryContents dest >>= return . filter isComplete) >>=
     either (\ e -> if isDoesNotExistError e then doLink [] else return (makeLeft "linkToLatest 0: " e)) doLink
     where
-      doLink archives =
-          hPutStrLn stderr ("doLink " ++ show archives) >> hFlush stderr >>
-          case listToMaybe . sortBy (\ a b -> compare (archiveDate b) (archiveDate a)) $ archives of
-            Just archive
-                -- There is an outofdate archive from today, use it as is.
-                | (backupDirectory ++ archive) == outofdate today ->
+      -- Given a list of existing archives, create a new archive hard linked to the newest existing archive.
+      doLink names =
+          hPutStrLn stderr ("doLink " ++ show names) >> hFlush stderr >>
+          case listToMaybe . sortBy (\ a b -> compare (archiveDate b) (archiveDate a)) $ names of
+            Just newest
+                -- There is already an archive from today marked outofdate, use it as is.
+                | (dest ++ "/" ++ newest) == outofdate dest today ->
                     return (Right today)
-                -- there is a finished archive from today, add the outofdate. prefix
-                | (backupDirectory ++ archive) == destination today ->
-                    try (renameDirectory (backupDirectory ++ archive) (outofdate today)) >>=
+                -- there is a finished archive from today, mark it outofdate and proceed.
+                | (dest ++ "/" ++ newest) == finished dest today ->
+                    try (renameDirectory (dest ++ "/" ++ newest) (outofdate dest today)) >>=
                     return . either (makeLeft "linkToLatest 1: ") (const (Right today))
-                -- The newest archive wasn't finished, rename it.
-                | isPrefixOf "incomplete." archive ->
-	            try (renameDirectory (backupDirectory ++ archive) (outofdate today)) >>=
-                    return . either (makeLeft "linkToLatest 2: ") (const (Right today))
-                -- The newest archive is finished and not from today, link to it.
+                -- The newest archive is finished and not from today, create a new link to it.
                 | True ->
-                    do let cmd = ("cp -al " ++ backupDirectory ++ archive ++ " " ++ incomplete today)
+                    do let cmd = ("cp -al " ++ dest ++ "/" ++ newest ++ " " ++ incomplete dest today)
                        result <- lazyCommand cmd []
                        case exitCodeOnly result of
                          ExitSuccess : _ -> 
-                             try (renameDirectory (incomplete today) (outofdate today)) >>=
+                             try (renameDirectory (incomplete dest today) (outofdate dest today)) >>=
                              return . either (makeLeft "linkToLatest 3: ") (const (Right today))
                          _ -> return . Left . userError $ "Failure in linkToLatest: " ++ cmd
-            -- There are no archives in the directory at all
-            Nothing -> hPutStrLn stderr ("creating " ++ show (outofdate today)) >>
-                       try (createDirectoryIfMissing True (outofdate today)) >>=
-                       --(\ x -> do hPutStrLn stderr (show x); return x) >>=
+            -- There are no archives in the directory at all.
+            Nothing -> hPutStrLn stderr ("creating " ++ show (outofdate dest today)) >>
+                       try (createDirectoryIfMissing True (outofdate dest today)) >>=
                        return . either
-                                  (\ e -> Left (userError ("Could not create " ++ outofdate today ++ ": " ++ show e)))
+                                  (\ e -> Left (userError ("Could not create " ++ outofdate dest today ++ ": " ++ show e)))
                                   (const (Right today))
-      destination (Date date) = backupDirectory ++ date
-      incomplete (Date date) = backupDirectory ++ "incomplete." ++ date
-      isComplete name = maybe False (flip elem [".outofdate.", ""]) . archivePrefix $ name
-      outofdate (Date date) = backupDirectory ++ ".outofdate." ++ date
       makeLeft s e = Left . userError $ s ++ show e
 
 data UpdateResult = NoChanges | Changes deriving Show
 
 updateFromOriginal :: [Option] -> FilePath -> FilePath -> Date -> IO (Either IOError UpdateResult)
-updateFromOriginal options original backupDirectory today =
+updateFromOriginal options original dest today =
     do
       let cmd = "rsync"
       let args = rsync options ++ ["-aHxSpDtl", "--partial", "--delete", "--recursive",
-                                   "--delete-excluded", "--stats", original, (outofdate today)]
+                                   "--delete-excluded", "--stats", original ++ "/", (outofdate dest today)]
       hPutStrLn stderr ("> " ++ concat (intersperse " " (cmd : args)))
       hPutStr stderr "  Updating from original ... "
       output <- if elem DryRun options then
@@ -178,10 +131,10 @@ updateFromOriginal options original backupDirectory today =
               hPutStrLn stderr ("Exiting with code " ++ show n)
               exitWith (ExitFailure n)
         ExitSuccess : _ ->
-            try (renameDirectory (outofdate today) (destination today)) >>=
+            try (renameDirectory (outofdate dest today) (finished dest today)) >>=
             return . either
                        (\ e -> Left (userError ("updateFromOriginal: failed to rename: " ++
-                                                     outofdate today ++ " -> " ++ destination today ++ ": " ++ show e)))
+                                                     outofdate dest today ++ " -> " ++ finished dest today ++ ": " ++ show e)))
                        (\ _ ->
                         -- We would like to mark archives that are identical to
                         -- others, but at this point we don't know what the
@@ -195,8 +148,6 @@ updateFromOriginal options original backupDirectory today =
       rsync (Rsync x : options) = x : rsync options
       rsync (_ : options) = rsync options
       rsync [] = []
-      destination (Date date) = backupDirectory ++ date
-      outofdate (Date date) = backupDirectory ++ ".outofdate." ++ date
       doOutput x@(Stdout s) = do B.hPut stdout s; return x
       doOutput x@(Stderr s) = do B.hPut stderr s; return x
       doOutput x = return x
@@ -226,3 +177,14 @@ archivePrefix name =
             Nothing -> Nothing
             _ -> error "internal error"
 archiveNameRE = mkRegex "^(.*)([0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])$"
+
+-- Path constructors: "Incomplete" means an interruption occurred
+-- while linking to the previous archive, such a directory should not
+-- be used.  "Outofdate" means an interruption occurred while updating
+-- from the original, an update of this directory can be resumed
+-- safely.  "Finished" is the location of the completed backup.
+incomplete dir (Date date) = dir ++ "/incomplete." ++ date
+outofdate dir (Date date) = dir ++ "/outofdate." ++ date
+finished dir (Date date) = dir ++ "/" ++ date
+
+isComplete = not . isPrefixOf "incomplete."
