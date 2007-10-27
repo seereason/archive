@@ -28,13 +28,12 @@ cgiMain =
        inputs <- CGI.getInputs
        moreInputs <- liftIO getEnvironment
        let cgivars = inputs ++ moreInputs
-       do result <- application path cgivars
-          case result of
-            Left e ->
-                CGI.output . show $ (h1 (stringToHtml "error") +++ 
-                                     stringToHtml (show e) +++ br +++
-                                     cgivarHtml cgivars)
-            Right s -> CGI.output (show (s +++ cgivarHtml cgivars))
+       result <- application path cgivars
+       let html' = 
+               case result of
+                 Left e -> (h1 (stringToHtml "error") +++ stringToHtml (show e))
+                 Right s -> s
+       CGI.output . show $ thead (thetitle (stringToHtml "Backups")) +++ body (html' {- +++ br +++ cgivarHtml cgivars -})
     where
       cgivarHtml cgivars =
           case {- lookup "show_cgi_vars" cgivars -} Just 1 of
@@ -64,18 +63,19 @@ useConfig :: [(String, String)] -> Either Html BackupSpec -> IO (Either Html Htm
 useConfig _ (Left html) = return (Left html)
 useConfig cgivars (Right backups) =
     do messages <- mapM runBackup (zip [1..] (volumes backups))
-       return (Right (form (table (tr (th (stringToHtml "ID") ! [intAttr "rowspan" 2] +++
-                                       th (stringToHtml "Original") ! [intAttr "colspan" 3] +++
-                                       th (stringToHtml "Archives") ! [intAttr "colspan" 2] +++
-                                       th (stringToHtml "Enabled") ! [intAttr "rowspan" 2] +++
-                                       th (stringToHtml "Backup") ! [intAttr "rowspan" 2]) +++
-                                   tr (th (stringToHtml "User") +++
-                                       th (stringToHtml "Host") +++
-                                       th (stringToHtml "Folder") ! [strAttr "size" "30%"] +++
-                                       th (stringToHtml "Host") +++
-                                       th (stringToHtml "Folder")) +++
-                                   toHtml backups) ! [intAttr "border" 1, strAttr "width" "100%"])
-                      ! [strAttr "method" "post"] +++ br +++ concatHtml (map showMessage messages)))
+       return (Right (form
+                       (table (tr (th (stringToHtml "ID") ! [intAttr "rowspan" 2] +++
+                                   th (stringToHtml "Original") ! [intAttr "colspan" 3] +++
+                                   th (stringToHtml "Archives") ! [intAttr "colspan" 2] +++
+                                   th (stringToHtml "Enabled") ! [intAttr "rowspan" 2] +++
+                                   th (stringToHtml "Backup") ! [intAttr "rowspan" 2]) +++
+                               tr (th (stringToHtml "User") +++
+                                   th (stringToHtml "Host") +++
+                                   th (stringToHtml "Folder") ! [strAttr "size" "30%"] +++
+                                   th (stringToHtml "Host") +++
+                                   th (stringToHtml "Folder")) +++
+                               toHtml backups) ! [intAttr "border" 1, strAttr "width" "100%"])
+                       ! [strAttr "method" "post"] +++ br +++ concatHtml (map showMessage messages)))
     where
       runBackup :: (Int, VolumeSpec) -> IO (Maybe (Either Html Html))
       runBackup (index, volume) =
