@@ -6,13 +6,12 @@ import		 Data.Maybe
 import		 Control.Exception
 import		 Control.Monad.Trans (liftIO)
 import qualified Network.CGI as CGI
-import		 URI
---import	 Network.URI
+import		 URI		-- modified Network.URI
 import		 System.Environment
 import		 Text.XHtml.Transitional hiding (archive)
 import		 System.Directory
 import		 Backup
-import		 Archive
+import		 Example
 import		 GHC.Read(readEither)
 import		 System.IO
 import		 Linspire.Unix.Process
@@ -21,6 +20,42 @@ import		 Data.Char
 
 main :: IO ()
 main = CGI.runCGI (CGI.handleErrors $ cgiMain)
+
+ourStyle =
+  let fonts = "Arial, Verdana, Univers, Futura" in
+  style (primHtml 
+         ("<!--\n" ++
+          unlines ["body { background: #ffffff;",
+                   "       text-decoration: none;",
+                   "       color: #000000;",
+                   "       font-family: arial;",
+                   "       font-size: small;",
+                   "       font-weight: medium }",
+                   "p    { text-indent: 10px; ",
+                   "       margin-left: 0px; ",
+                   "       margin-right: 10px }",
+                   "th   { ",
+                   ("       font-family: " ++ fonts ++ ";"),
+                   "       font-size: small;",
+                   "       font-weight: medium;",
+                   --" background: #d4d4d0;",
+                   --" color: #FFFFFF;",
+                   "}",
+                   "a    { text-decoration: none;",
+                   "       color=0000CC}",
+                   "td {background: #FCFCFF;",
+                   ("       font-family: " ++ fonts ++ ";"),
+                   "       font-size: small;",
+                   "       font-weight: medium}",
+                   ".evengrid {background: #FCFCFF;",
+                   ("       font-family: " ++ fonts ++ ";"),
+                   "       font-size: small;",
+                   "       font-weight: medium}",
+                   ".oddgrid {background: #eeeecc;",
+                   ("       font-family: " ++ fonts ++ ";"),
+                   "       font-size: small;",
+                   "       font-weight: medium}"] ++
+          "-->")) ! [strAttr "type" "text/css"]
 
 cgiMain :: CGI.CGI CGI.CGIResult
 cgiMain = 
@@ -33,7 +68,7 @@ cgiMain =
                case result of
                  Left e -> (h1 (stringToHtml "error") +++ stringToHtml (show e))
                  Right s -> s
-       CGI.output . show $ thead (thetitle (stringToHtml "Backups")) +++ body (html' {- +++ br +++ cgivarHtml cgivars -})
+       CGI.output . show $ thead (thetitle (stringToHtml "Backups")) +++ ourStyle +++ body (html' +++ br +++ cgivarHtml cgivars)
     where
       cgivarHtml cgivars =
           case {- lookup "show_cgi_vars" cgivars -} Just 1 of
@@ -62,56 +97,50 @@ updateConfig cgivars =
 useConfig :: [(String, String)] -> Either Html BackupSpec -> IO (Either Html Html)
 useConfig _ (Left html) = return (Left html)
 useConfig cgivars (Right backups) =
-    do messages <- mapM runBackup (zip [1..] (volumes backups))
-       return (Right (form
-                       (table (tr (th (stringToHtml "ID") ! [intAttr "rowspan" 2] +++
-                                   th (stringToHtml "Original") ! [intAttr "colspan" 3] +++
-                                   th (stringToHtml "Archives") ! [intAttr "colspan" 2] +++
-                                   th (stringToHtml "Enabled") ! [intAttr "rowspan" 2] +++
-                                   th (stringToHtml "Backup") ! [intAttr "rowspan" 2]) +++
-                               tr (th (stringToHtml "User") +++
-                                   th (stringToHtml "Host") +++
-                                   th (stringToHtml "Folder") ! [strAttr "size" "30%"] +++
-                                   th (stringToHtml "Host") +++
-                                   th (stringToHtml "Folder")) +++
-                               toHtml backups) ! [intAttr "border" 1, strAttr "width" "100%"])
-                       ! [strAttr "method" "post"] +++ br +++ concatHtml (map showMessage messages)))
+    do messages <- mapM runBackup (zip [1..] (volumes backups)) >>= return . concat
+       return (Right (toHtml backups +++ br +++ concatHtml (map showMessage messages)))
     where
-      runBackup :: (Int, VolumeSpec) -> IO (Maybe (Either Html Html))
+      runBackup :: (Int, VolumeSpec) -> IO [Either Html Html]
       runBackup (index, volume) =
           case lookup ("Run" ++ show index) cgivars of
             Just "1" ->
-                do case (uriAuthority (original volume), uriAuthority (copies volume)) of
-                     (_, Nothing) -> return . Just . Left . stringToHtml $ "Invalid destination URI: " ++ show (copies volume)
-                     (Nothing, _) -> return . Just . Left . stringToHtml $ "Invalid original URI: " ++ show (original volume)
-                     (Just orig, Just copy) ->
-                            -- The archive commands needs to be run from the machine where the
-                            -- copy will be created, so ssh there.
-                         do let copyAddr = uriUserInfo copy ++ uriRegName copy
-                            let origAddr = uriUserInfo orig ++ uriRegName orig
-                            let cmd = ("set -x && " ++
-                                       ssh ++ copyAddr ++ " '"
-                                       ++ (archiveBin ++ " " ++
-                                           "\"" ++ origAddr ++ ":" ++ uriPath (original volume) ++ "\"" ++ " " ++
-                                           "\"" ++ uriPath (copies volume) ++ "\"") ++
-                                       "'")
-                            result <- lazyCommand cmd []
-                            let output = stringToHtml . byteStringToString . B.concat . outputOnly $ result
-                            case exitCodeOnly result of
-                              (ExitSuccess : _) -> return . Just . Right . pre $ (stringToHtml cmd +++ br +++ stringToHtml " ->\n" +++ output)
-                              x -> return . Just . Left . pre $ stringToHtml ("Failure: " ++ cmd ++ " -> " ++ show x ++ "\n") +++ output
+                case (uriAuthority (original volume), uriAuthority (copies volume)) of
+                  (_, Nothing) -> return [Left . stringToHtml $ "Invalid destination URI: " ++ show (copies volume)]
+                  (Nothing, _) -> return [Left . stringToHtml $ "Invalid original URI: " ++ show (original volume)]
+                  (Just orig, Just copy) ->
+                      -- The archive commands needs to be run from the machine where the
+                      -- copy will be created, so ssh there.
+                      do let copyAddr = uriUserInfo copy ++ uriRegName copy
+                         let origAddr = uriUserInfo orig ++ uriRegName orig
+                         let cmd = ("set -x && " ++
+                                    ssh ++ copyAddr ++ " '"
+                                    ++ (archiveBin ++ " " ++
+                                        "\"" ++ origAddr ++ ":" ++ uriPath (original volume) ++ "\"" ++ " " ++
+                                        "\"" ++ uriPath (copies volume) ++ "\"") ++
+                                    "'")
+                         result <- lazyCommand cmd []
+                         let output = stringToHtml . byteStringToString . B.concat . outputOnly $ result
+                         case exitCodeOnly result of
+                           (ExitSuccess : _) -> return [Right . pre $ (stringToHtml cmd +++ br +++ stringToHtml " ->\n" +++ output)]
+                           x -> return [Left . pre $ stringToHtml ("Failure: " ++ cmd ++ " -> " ++ show x ++ "\n") +++ output]
+            _ -> return []
+             --compareMessages <- mapM (runCompare ("Compare" ++ show index ++ ".")) (zip [1..] (orphans volume))
 {-
-                do result <- archiveRemote [] (original volume) (copies volume)
-                   let message = stringToHtml ("archive " ++ host (original volume) ++ ":" ++ folder (original volume) ++
-                                               " " ++ host (copies volume) ++ ":" ++ folder (copies volume) ++ " -> ")
-                   case result of
-                     Left e -> return . Just . Left $ message +++ br +++ stringToHtml ("backup failed: " ++ show e) +++ br
-                     Right r -> return . Just . Right $ message +++ stringToHtml (show r) +++ br
+      runCompare prefix (index, uri) =
+          do compareMessages <-
+                 case lookup (prefix ++ "show index") cgivars of
+                   Just "1" ->
+                       case uriAuthority uri of
+                         Nothing -> [Left . stringToHtml $ "Invalid comparison URI: " ++ show uri]
+                         Just auth ->
+                             do let addr = uriUserInfo auth ++ uriRegName auth
+                                let cmd = ("set -x && " ++
+                                           ssh ++ authAddr ++ " '"
+                                           ++ (findCopiesBin ++ " " ++
+                                               "\"" ++ addr ++ ":" ++ uriPath uri ++ "\""
 -}
-            _ -> return Nothing
-      showMessage Nothing = noHtml
-      showMessage (Just (Left e)) = font e ! [strAttr "color" "red"]
-      showMessage (Just (Right h)) = h +++ br
+      showMessage (Left e) = font e ! [strAttr "color" "red"]
+      showMessage (Right h) = h +++ br
 
 scp = "scp -o 'PreferredAuthentications hostbased,publickey' "
 ssh = "ssh -o 'PreferredAuthentications hostbased,publickey' "
@@ -153,25 +182,6 @@ testDefaultUserInfoMap =
      , defaultUserInfoMap "user:pass"       == "user:...@"
      , defaultUserInfoMap "user:anonymous"  == "user:...@"
      ]
-
-example = Backups 
-          { volumes = [ Volume 
-                        { index = 1
-                        , original = makeURI "rsync://dsf@192.168.0.3/mnt/sdd2/audio"
-                        , copies = makeURI "rsync://dsf@192.168.0.2/mnt/sdc2/backups/audio"
-                        , enabled = False }
-                      , Volume
-                        { index = 2
-                        , original = makeURI "rsync://dsf@192.168.0.3/mnt/sdd2/{archives}"
-                        , copies = makeURI "rsync://dsf@192.168.0.2/mnt/sdc2/backups/{archives}"
-                        , enabled = True }
-                      , Volume
-                        { index = 3
-                        , original = makeURI "rsync://dsf@192.168.0.3/var/lib/geneweb"
-                        , copies = makeURI "rsync://dsf@192.168.0.2/mnt/sdc2/backups/geneweb"
-                        , enabled = True }
-                      ]
-          }
 
 {-
 eitherDo :: (a -> m (either e b)) -> Either e a -> m (Either e b)
@@ -224,36 +234,38 @@ modifyConfig cgivars (Right oldBackups)
     | otherwise = Right (oldBackups, createVolume (modifyVolumes oldBackups))
     where
       modifyVolumes backups =
-          backups { volumes = map modifyVolume (zip [1..] (volumes backups)) }
+          backups { volumes = setVolumeIds (catMaybes (map modifyVolume (zip [1..] (volumes oldBackups)))) }
+      setVolumeIds volumes = map (\ (index, volume) -> volume { volumeId = Just index }) (zip [1..] volumes)
       modifyVolume (index, volume) =
           case map (\ s -> lookup s cgivars) (map (++ (show index))
                                               ["OriginalUser", "OriginalHost", "OriginalFolder",
                                                "ArchiveHost", "ArchiveFolder"]) of
+            [Just "", Just "", Just "", Just "", Just ""] -> Nothing
             [Just ou, Just oh, Just op, Just ah, Just ap] ->
-                volume { original = URI { uriScheme = "rsync:"
-                                        , uriAuthority = Just (URIAuth { uriUserInfo = (ou ++ "@")
-                                                                       , uriRegName = oh
-                                                                       , uriPort = "" })
-                                        , uriPath = op
-                                        , uriQuery = ""
-                                        , uriFragment = "" }
-                       , copies = URI { uriScheme = "rsync:"
-                                      , uriAuthority = Just (URIAuth { uriUserInfo = (archiveUser ++ "@")
-                                                                     , uriRegName = ah
-                                                                     , uriPort = "" })
-                                      , uriPath = ap
-                                      , uriQuery = ""
-                                      , uriFragment = "" }
-                       , enabled = case lookup ("Enabled" ++ show index) cgivars of
-                                     Just "1" -> True
-                                     _ -> False }
-            _ -> volume
+                Just (volume { original = URI { uriScheme = "rsync:"
+                                              , uriAuthority = Just (URIAuth { uriUserInfo = (ou ++ "@")
+                                                                             , uriRegName = oh
+                                                                             , uriPort = "" })
+                                              , uriPath = op
+                                              , uriQuery = ""
+                                              , uriFragment = "" }
+                             , copies = URI { uriScheme = "rsync:"
+                                            , uriAuthority = Just (URIAuth { uriUserInfo = (archiveUser ++ "@")
+                                                                           , uriRegName = ah
+                                                                           , uriPort = "" })
+                                            , uriPath = ap
+                                            , uriQuery = ""
+                                            , uriFragment = "" }
+                             , enabled = case lookup ("Enabled" ++ show index) cgivars of
+                                           Just "1" -> True
+                                           _ -> False})
+            _ -> Just volume
       createVolume oldBackups =
           case map (\ s -> lookup s cgivars) ["OriginalHost", "OriginalUser", "OriginalFolder",
                                               "ArchiveHost", "ArchiveFolder"] of
             [Just "", Just "", Just "", Just "", Just ""] -> oldBackups
             [Just oh, Just ou, Just op, Just ah, Just ap] ->
-                let newVolume = Volume { index = length (volumes oldBackups) + 1
+                let newVolume = Volume { volumeId = Nothing
                                        , original = URI { uriScheme = "rsync:"
                                                         , uriAuthority = Just (URIAuth { uriUserInfo = (ou ++ "@")
                                                                                        , uriRegName = oh

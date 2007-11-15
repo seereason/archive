@@ -9,14 +9,17 @@ backups: Main.hs Makefile URI.hs Backup.hs
 
 archive: ArchiveMain.hs Archive.hs Makefile
 	ghc6 --make -fglasgow-exts -W -O2 ArchiveMain.hs -o $@
-	strip archive
-	$(SCP) archive root@server:/srv/backups/archive
-	set -x && for addr in 192.168.0.2 192.168.0.3; \
-	  do $(SCP) archive root@$$addr:/srv/backups/archive && \
-	     $(SSH) root@$$addr 'chown root.root /srv/backups/archive && chmod 4755 /srv/backups/archive'; done
+	strip $@
+	set -x && for addr in 192.168.0.2 192.168.0.3 192.168.0.108; \
+	  do $(SCP) $@ root@$$addr:/srv/backups/$@ && \
+	     $(SSH) root@$$addr 'chown root.root /srv/backups/$@ && chmod 4755 /srv/backups/$@'; done
 
-findcopies : FindCopies.hs
-	ghc6 --make -fglasgow-exts -W -O2 FindCopies.hs -o $@
+findcopies : FindCopiesMain.hs FindCopies.hs
+	ghc6 --make -fglasgow-exts -W -O2 FindCopiesMain.hs -o $@
+	strip $@
+	set -x && for addr in 192.168.0.2 192.168.0.3 192.168.0.108; \
+	  do $(SCP) $@ root@$$addr:/srv/backups/$@ && \
+	     $(SSH) root@$$addr 'chown root.root /srv/backups/$@ && chmod 4755 /srv/backups/$@'; done
 
 clean:
 	rm -f *.hi *.o backups
