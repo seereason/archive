@@ -1,3 +1,5 @@
+-- |Data type representing something to back up, where it gets
+-- backed up to, how often to back it up, etc.
 module Backup
     ( BackupSpec(..)
     , VolumeSpec(..)
