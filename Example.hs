@@ -1,7 +1,7 @@
 module Example where
 
-import		 Backup
-import		 URI
+import Backup
+import Ugly.URI
 
 example =
     Backups {volumes = [Volume { volumeId = Just 1,

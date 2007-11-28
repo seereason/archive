@@ -8,9 +8,9 @@ module Backup
     , folder
     ) where
 
-import		 Data.List
-import		 URI
-import		 Text.XHtml.Transitional hiding (archive)
+import Data.List
+import Ugly.URI
+import Text.XHtml.Transitional hiding (archive)
 
 -- |Specifies a list of directories to be backed up.
 data BackupSpec

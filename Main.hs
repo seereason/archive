@@ -6,7 +6,7 @@ import		 Data.Maybe
 import		 Control.Exception
 import		 Control.Monad.Trans (liftIO)
 import qualified Network.CGI as CGI
-import		 URI		-- modified Network.URI
+import		 Ugly.URI	-- modified Network.URI
 import		 System.Environment
 import		 Text.XHtml.Transitional hiding (archive)
 import		 System.Directory
