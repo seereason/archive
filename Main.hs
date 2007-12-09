@@ -1,61 +1,22 @@
 -- |CGI command to manage backups.
 module Main where
 
-import		 Data.List
-import		 Data.Maybe
-import		 Control.Exception
-import		 Control.Monad.Trans (liftIO)
-import qualified Network.CGI as CGI
-import		 Ugly.URI	-- modified Network.URI
-import		 System.Environment
-import		 Text.XHtml.Transitional hiding (archive)
-import		 System.Directory
-import		 Backup
-import		 Example
-import		 GHC.Read(readEither)
-import		 System.IO
-import		 Linspire.Unix.Process
-import qualified Data.ByteString as B
-import		 Data.Char
+import Text.XHtml.Transitional hiding (archive)
+import Backup
+import System.IO
+import Control.Monad.Reader
+import Ugly.Html.FORM
 
 main :: IO ()
-main = CGI.runCGI (CGI.handleErrors $ cgiMain)
+main = runFormApplication application
 
-ourStyle =
-  let fonts = "Arial, Verdana, Univers, Futura" in
-  style (primHtml 
-         ("<!--\n" ++
-          unlines ["body { background: #ffffff;",
-                   "       text-decoration: none;",
-                   "       color: #000000;",
-                   "       font-family: arial;",
-                   "       font-size: small;",
-                   "       font-weight: medium }",
-                   "p    { text-indent: 10px; ",
-                   "       margin-left: 0px; ",
-                   "       margin-right: 10px }",
-                   "th   { ",
-                   ("       font-family: " ++ fonts ++ ";"),
-                   "       font-size: small;",
-                   "       font-weight: medium;",
-                   --" background: #d4d4d0;",
-                   --" color: #FFFFFF;",
-                   "}",
-                   "a    { text-decoration: none;",
-                   "       color=0000CC}",
-                   "td {background: #FCFCFF;",
-                   ("       font-family: " ++ fonts ++ ";"),
-                   "       font-size: small;",
-                   "       font-weight: medium}",
-                   ".evengrid {background: #FCFCFF;",
-                   ("       font-family: " ++ fonts ++ ";"),
-                   "       font-size: small;",
-                   "       font-weight: medium}",
-                   ".oddgrid {background: #eeeecc;",
-                   ("       font-family: " ++ fonts ++ ";"),
-                   "       font-size: small;",
-                   "       font-weight: medium}"] ++
-          "-->")) ! [strAttr "type" "text/css"]
+application :: FORM Html
+application = local (\ info -> info { configDir = "/srv/backups", configName = "backups" }) backupApplication
+
+backupApplication = (readEditSave :: FORM BackupSpec) >>= htmlForm
+
+{-
+CGI.runCGI (CGI.handleErrors $ cgiMain)
 
 cgiMain :: CGI.CGI CGI.CGIResult
 cgiMain = 
@@ -68,7 +29,7 @@ cgiMain =
                case result of
                  Left e -> (h1 (stringToHtml "error") +++ stringToHtml (show e))
                  Right s -> s
-       CGI.output . show $ thead (thetitle (stringToHtml "Backups")) +++ ourStyle +++ body (html' +++ br +++ cgivarHtml cgivars)
+       CGI.output . showHtml $ thead (thetitle (stringToHtml "Backups")) +++ myStyle +++ body (html' +++ br +++ cgivarHtml cgivars)
     where
       cgivarHtml cgivars =
           case {- lookup "show_cgi_vars" cgivars -} Just 1 of
@@ -80,7 +41,8 @@ cgiMain =
 -- perform any requested backups.  Finally, output the resulting HTML.
 application :: FilePath -> [(String, String)] -> CGI.CGI (Either Html Html)
 application _ cgivars = liftIO (updateConfig cgivars >>= useConfig cgivars)
-
+-}
+{-
 mergeTry x = try x >>= return . either (Left . stringToHtml . ("mergeTry: " ++) . show) id
 
 -- |Load the configuration from a file, update it using the values
@@ -313,3 +275,4 @@ saveConfig (Right (_, newBackups)) =
 topURI = "/backups"
 topDir = "/var/www" ++ topURI
 configPath = topDir ++ "/backups.hs"
+-}
