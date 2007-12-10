@@ -6,14 +6,58 @@ import Backup
 import System.IO
 import Control.Monad.Reader
 import Ugly.Html.FORM
+import Ugly.URI
+import Data.Maybe
+import Data.List
+--import Text.Regex
+import Linspire.Unix.Process
+import qualified Data.ByteString.Char8 as B
 
 main :: IO ()
 main = runFormApplication application
 
 application :: FORM Html
-application = local (\ info -> info { configDir = "/srv/backups", configName = "backups" }) backupApplication
+application = local (\ info -> info { sticky = (sticky info ++ ["debug"])
+                                    , configDir = "/srv/backups"
+                                    , configName = "backups" }) backupApplication
 
-backupApplication = (readEditSave :: FORM BackupSpec) >>= htmlForm
+backupApplication = (readEditSave :: FORM BackupSpec) >>= runBackups >>= htmlForm
+
+runBackups :: BackupSpec -> FORM BackupSpec
+runBackups spec =
+    do info <- ask
+       let runs = filter isRun (edits info)
+       let vols = map ((volumes spec) !!) . catMaybes . (map getIndex) $ runs
+       results <- mapM runBackup vols
+       return (spec {status = concatHtml (map p results) +++
+                     stringToHtml (show vols)})
+    where
+      isRun (ListEdit {listOp = Update "run" _}) = True
+      isRun _ = False
+      getIndex (ListEdit {elemID = (Pos {posIndex = n} : _)}) = Just (n - 1)
+      getIndex _ = Nothing
+
+runBackup :: VolumeSpec -> FORM Html
+runBackup volume =
+    case (uriAuthority (original volume), uriAuthority (copies volume)) of
+      (_, Nothing) -> return . stringToHtml $ "Invalid destination URI: " ++ show (copies volume)
+      (Nothing, _) -> return . stringToHtml $ "Invalid original URI: " ++ show (original volume)
+      (Just orig, Just copy) ->
+          -- The archive commands needs to be run from the machine where the
+          -- copy will be created, so ssh there.
+          do let copyAddr = uriUserInfo copy ++ uriRegName copy
+             let origAddr = uriUserInfo orig ++ uriRegName orig
+             let cmd = ("set -x && " ++
+                        ssh ++ copyAddr ++ " '"
+                        ++ (archiveBin ++ " " ++
+                            "\"" ++ origAddr ++ ":" ++ uriPath (original volume) ++ "\"" ++ " " ++
+                            "\"" ++ uriPath (copies volume) ++ "\"") ++
+                        "'")
+             result <- liftIO $ lazyCommand cmd []
+             let output = stringToHtml . B.unpack . B.concat . outputOnly $ result
+             case exitCodeOnly result of
+               (ExitSuccess : _) -> return . pre $ (stringToHtml cmd +++ br +++ stringToHtml " ->\n" +++ output)
+               x -> return . pre $ stringToHtml ("Failure: " ++ cmd ++ " -> " ++ show x ++ "\n") +++ output
 
 {-
 CGI.runCGI (CGI.handleErrors $ cgiMain)
@@ -103,6 +147,7 @@ useConfig cgivars (Right backups) =
 -}
       showMessage (Left e) = font e ! [strAttr "color" "red"]
       showMessage (Right h) = h +++ br
+-}
 
 scp = "scp -o 'PreferredAuthentications hostbased,publickey' "
 ssh = "ssh -o 'PreferredAuthentications hostbased,publickey' "
@@ -115,9 +160,10 @@ archiveRemote :: [Option] -> URI -> URI -> IO (Either IOError String)
 archiveRemote options original backups =
 -}
 
-byteStringToString :: B.ByteString -> String
-byteStringToString b = map (chr . fromInteger . toInteger) . B.unpack $ b
+--byteStringToString :: B.ByteString -> String
+--byteStringToString b = map (chr . fromInteger . toInteger) . B.unpack $ b
 
+{-
 empty = Backups { volumes = [] }
 
 fromJust' _ (Just x) = x

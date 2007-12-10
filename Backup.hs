@@ -8,87 +8,78 @@ module Backup
     , folder
     ) where
 
+import Control.Arrow hiding ((+++))
+import Data.Char
 import Data.List
 import Ugly.Html.FORM
 import Ugly.Html.Style
-import Ugly.URI
+import Ugly.Encoding.Octets
 import Text.XHtml.Transitional hiding (archive)
 import Volume
+import Control.Monad.Reader
+import qualified Data.ByteString.Lazy as B
 
 -- |Specifies a list of directories to be backed up.
 data BackupSpec
     = Backups { volumes :: [VolumeSpec]
-              } deriving (Show, Read, Eq, Ord)
+              , status :: Html
+              } deriving (Show, Read, Eq)
 
 instance Form BackupSpec where
     defaultForm = create
     formUpdate = element
-    htmlHead _ = return myStyle
+    htmlHead _ = return $ myStyle +++ thetitle (stringToHtml "Backups")
     htmlInputs = htmlElementShow Nothing
 
 instance Element BackupSpec where
     ident _ = "b"
     element prefix command spec = 
         spec {volumes = traverse prefix command (volumes spec)}
-    create = Backups {volumes = []}
+    create = Backups {volumes = [], status = noHtml}
     update s _ _ = error $ "Undefined Backup update: " ++ s
     htmlElementShow nav spec =
-        do (topnav, content) <- htmlSubList spec (volumes spec)
-           uri <- formURI
-           let nav' = maybe topnav Just nav
-           return content
+        do (topnav, content) <- htmlSubList (volumes spec)
+           script <- formURI
+           let nav' = maybe (maybe noHtml id topnav) id nav
+           extra <- debug
+           let backups =
+                   (table
+                    (tr (-- It is important to have a submit button at the
+                         -- top of the form because otherwise hitting the
+                         -- enter key on a textarea input causes submits
+                         -- that appears to be going to another control,
+                         -- like the top navigation insert.
+                         th (submit "submit" "update") +++
+                         th nav' +++
+                         th (formLink script (font (stringToHtml "Backups") 
+                                              ! [intAttr "size" 5]) (Nothing :: Maybe VolumeSpec)) ! [intAttr "colspan" 4] +++
+                         th (formLink script (stringToHtml "Edit") (Just (undefined :: VolumeSpec)))) +++
+                     tr (th (stringToHtml "ID") +++
+                         th (primHtmlChar "nbsp") +++
+                         th (stringToHtml "User") +++
+                         th (stringToHtml "Host") +++
+                         th (stringToHtml "Folder") +++
+                         th (stringToHtml "Enabled") +++
+                         th (primHtmlChar "nbsp")) +++
+                     content)
+                    ! [-- intAttr "border" 1,
+                       strAttr "align" "center",
+                       strAttr "border" "0",
+                       strAttr "cellpadding" "0",
+                       strAttr "cellspacing" "0",
+                       strAttr "style" "width: 250px",
+                       strAttr "width" "100%"] +++
+                    br +++ status spec +++ br +++ extra)
+           return backups
+        where
+           debug = do info <- ask
+                      return $ case lookup "debug" (cgivars info) of
+                                 Nothing -> noHtml
+                                 _ -> concatHtml (intersperse br (map (stringToHtml . show . second unpack) (cgivars info)))
+           unpack (Octets s) = map (chr . fromInteger . toInteger) . B.unpack $ s
     htmlElementEdit = undefined
+    htmlList = undefined
 
 instance List BackupSpec VolumeSpec where
     getElements spec = volumes spec
     setElements spec xs = spec {volumes = xs}
-    htmlList spec vols elems =
-        do uri <- formURI
-           return (table
-                   (tr (th (font (stringToHtml "Backups") ! [intAttr "size" 5]) ! [intAttr "colspan" 7]) +++
-                    tr (th (stringToHtml "ID") +++
-                        th (primHtmlChar "nbsp") +++
-                        th (stringToHtml "User") +++
-                        th (stringToHtml "Host") +++
-                        th (stringToHtml "Folder") +++
-                        th (stringToHtml "Enabled") +++
-                        th (primHtmlChar "nbsp")) +++
-                    concatHtml elems +++
-                    newVolumeForm (length (volumes spec) + 1) uri)
-                   ! [-- intAttr "border" 1,
-                      strAttr "align" "center",
-                      strAttr "border" "0",
-                      strAttr "cellpadding" "0",
-                      strAttr "cellspacing" "0",
-                      strAttr "style" "width: 250px",
-                      strAttr "width" "100%"])
-        where
-          newVolumeForm :: Int -> URI -> Html
-          newVolumeForm vol uri =
-              let gridclass = strAttr "class" (case (vol `mod` 2) of
-                                                 0 -> "evengrid"
-                                                 _ -> "oddgrid") in
-              tr (th (stringToHtml "New:") ! [gridclass] +++
-                  th (stringToHtml "Original:") ! [gridclass]  +++
-                  td (textfield "OriginalUser" ! [intAttr "size" 15, gridclass]) ! (valueAttr "OriginalUser" ++ [gridclass])  +++
-                  td (textfield "OriginalHost" ! [intAttr "size" 15, gridclass]) ! (valueAttr "OriginalHost" ++ [gridclass]) +++
-                  td (textfield "OriginalFolder" ! [gridclass]) ! (valueAttr "OriginalFolder" ++ [intAttr "size" 30, gridclass])  +++
-                  td (primHtmlChar "nbsp") ! [intAttr "colspan" 2, gridclass]) +++
-              tr (td (primHtmlChar "nbsp") ! [gridclass] +++
-                  th (stringToHtml "Archive:") ! [gridclass] +++
-                  td (primHtmlChar "nbsp") ! [gridclass] +++
-                  td (textfield "ArchiveHost" ! [intAttr "size" 15, gridclass]) ! (valueAttr "ArchiveHost" ++ [gridclass]) +++
-                  td (textfield "ArchiveFolder" ! [gridclass]) ! (valueAttr "ArchiveFolder" ++ [gridclass]) +++
-                  td (primHtmlChar "nbsp") ! [gridclass] +++
-                  td (primHtmlChar "nbsp") ! [gridclass]) +++
-              tr (td (primHtmlChar "nbsp") +++
-                  th (button (stringToHtml "Update")
-                      ! [strAttr "type" "submit",
-                         strAttr "title" "Go",
-                         strAttr "name" "submit",
-                         strAttr "value" "1"] +++
-                      formLink uri (stringToHtml "Edit Volumes") (Just (undefined :: VolumeSpec)))
-                  ! [intAttr "colspan" 5] +++
-                  td (primHtmlChar "nbsp") ! [intAttr "colspan" 2])
-
-          valueAttr _ = [] -- maybe [] (\ s -> [strAttr "value" s]) (lookup name cgivars)
