@@ -18,8 +18,7 @@ main = runFormApplication application
 
 application :: FORM Html
 application = local (\ info -> info { sticky = (sticky info ++ ["debug"])
-                                    , configDir = "/srv/backups"
-                                    , configName = "backups" }) backupApplication
+                                    , appName = "backups" }) backupApplication
 
 backupApplication = (readEditSave :: FORM BackupSpec) >>= runBackups >>= htmlForm
 
