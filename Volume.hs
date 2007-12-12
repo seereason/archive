@@ -1,6 +1,7 @@
 module Volume where
 
 import Ugly.Html.FORM
+import Ugly.Encoding.Octets
 import Ugly.URI
 import Text.XHtml.Transitional
 import Control.Monad.Reader
@@ -19,12 +20,12 @@ instance Element VolumeSpec where
     create = Volume {original = nullURI, copies = nullURI, enabled = False}
     isIncomplete vol = original vol == nullURI || copies vol == nullURI
     update "run" _ volume = volume
-    update "Enabled" v volume = volume {enabled = if v == "1" then True else (error $ "Unexpected value of enabled: " ++ v)}
-    update "OriginalUser" v volume = volume {original = setURIUser v (original volume)}
-    update "OriginalHost" v volume = volume {original = setURIHost v (original volume)}
-    update "OriginalFolder" v volume = volume {original = setURIFolder v (original volume)}
-    update "ArchiveHost" v volume = volume {copies = setURIHost v (copies volume)}
-    update "ArchiveFolder" v volume = volume {original = setURIFolder v (copies volume)}
+    update "Enabled" v volume = volume {enabled = if unpack v == "1" then True else (error $ "Unexpected value of enabled: " ++ unpack v)}
+    update "OriginalUser" v volume = volume {original = setURIUser (unpack v) (original volume)}
+    update "OriginalHost" v volume = volume {original = setURIHost (unpack v) (original volume)}
+    update "OriginalFolder" v volume = volume {original = setURIFolder (unpack v) (original volume)}
+    update "ArchiveHost" v volume = volume {copies = setURIHost (unpack v) (copies volume)}
+    update "ArchiveFolder" v volume = volume {original = setURIFolder (unpack v) (copies volume)}
     update s _ _ = error $ "Undefined Volume update: " ++ s
     htmlElementShow nav volume =
         do info <- ask
