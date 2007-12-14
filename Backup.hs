@@ -27,9 +27,7 @@ data BackupSpec
 
 instance Form BackupSpec where
     defaultForm = create
-    formUpdate = element
     htmlHead _ = return $ myStyle +++ thetitle (stringToHtml "Backups")
-    htmlInputs = htmlElementShow Nothing
 
 instance Element BackupSpec where
     ident _ = "b"
@@ -37,7 +35,7 @@ instance Element BackupSpec where
         spec {volumes = traverse prefix command (volumes spec)}
     create = Backups {volumes = [], status = noHtml}
     update s _ _ = error $ "Undefined Backup update: " ++ s
-    htmlElementShow nav spec =
+    htmlElement nav spec _ =
         do (topnav, content) <- htmlSubList (volumes spec)
            script <- formURI
            let nav' = maybe (maybe noHtml id topnav) id nav
@@ -77,7 +75,6 @@ instance Element BackupSpec where
                                  Nothing -> noHtml
                                  _ -> concatHtml (intersperse br (map (stringToHtml . show . second unpack) (cgivars info)))
            unpack (Octets s) = map (chr . fromInteger . toInteger) . B.unpack $ s
-    htmlElementEdit = undefined
     htmlList = undefined
 
 instance List BackupSpec VolumeSpec where

@@ -27,7 +27,7 @@ instance Element VolumeSpec where
     update "ArchiveHost" v volume = volume {copies = setURIHost (unpack v) (copies volume)}
     update "ArchiveFolder" v volume = volume {original = setURIFolder (unpack v) (copies volume)}
     update s _ _ = error $ "Undefined Volume update: " ++ s
-    htmlElementShow nav volume =
+    htmlElement nav volume False =
         do info <- ask
            let index = infoIndex info
                gridclass = strAttr "class" (if index `mod` 2 == 0 then "evengrid" else "oddgrid")
@@ -56,7 +56,7 @@ instance Element VolumeSpec where
                           td (maybe (primHtmlChar "nbsp") id nav)
                           ! [intAttr "colspan" 2, gridclass]))
            return html
-    htmlElementEdit nav volume =
+    htmlElement nav volume True =
         do info <- ask
            let index = infoIndex info
            let gridclass = strAttr "class" (if index `mod` 2 == 0 then "evengrid" else "oddgrid")
