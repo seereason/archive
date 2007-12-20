@@ -11,7 +11,7 @@ module Backup
 import Control.Arrow hiding ((+++))
 import Data.Char
 import Data.List
-import Ugly.Html.FORM
+import Ugly.Form
 import Ugly.Html.Style
 import Ugly.Encoding.Octets
 import Text.XHtml.Transitional hiding (archive)
@@ -31,9 +31,10 @@ instance Form BackupSpec where
 
 instance Element BackupSpec where
     ident _ = "b"
-    element prefix command spec = 
-        spec {volumes = traverse prefix command (volumes spec)}
+    elementM prefix command spec = 
+        traverseM prefix command (volumes spec) >>= \ vols -> return $ spec {volumes = vols}
     create = Backups {volumes = [], status = noHtml}
+    updateM a v x = return $ update a v x
     update s _ _ = error $ "Undefined Backup update: " ++ s
     htmlElement nav spec _ =
         do (topnav, content) <- htmlSubList (volumes spec)
@@ -54,7 +55,7 @@ instance Element BackupSpec where
                          th (formLink script (stringToHtml "Edit") (Just (undefined :: VolumeSpec)))) +++
                      tr (th (stringToHtml "ID") +++
                          th (primHtmlChar "nbsp") +++
-                         th (stringToHtml "User") +++
+                         th (stringToHtml "UUID") +++
                          th (stringToHtml "Host") +++
                          th (stringToHtml "Folder") +++
                          th (stringToHtml "Enabled") +++
@@ -75,7 +76,7 @@ instance Element BackupSpec where
                                  Nothing -> noHtml
                                  _ -> concatHtml (intersperse br (map (stringToHtml . show . second unpack) (cgivars info)))
            unpack (Octets s) = map (chr . fromInteger . toInteger) . B.unpack $ s
-    htmlList = undefined
+    htmlList _ elems = return $ concatHtml (intersperse br elems)
 
 instance List BackupSpec VolumeSpec where
     getElements spec = volumes spec

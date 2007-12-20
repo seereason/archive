@@ -5,7 +5,7 @@ import Text.XHtml.Transitional hiding (archive)
 import Backup
 import System.IO
 import Control.Monad.Reader
-import Ugly.Html.FORM
+import Ugly.Form
 import Ugly.URI
 import Data.Maybe
 import Data.List
