@@ -14,7 +14,9 @@
 module Main where
 
 import Control.Exception
+import Control.Monad
 import Data.List
+import Extra.HughesPJ
 --import System.Time
 --import System.Locale
 --import System.Directory
@@ -22,7 +24,7 @@ import System.IO
 import Data.Maybe
 import System.Environment
 --import System.Cmd
---import System.Exit
+import System.Exit
 --import Text.Regex
 --import Data.Char(chr)
 --import Data.Char
@@ -49,6 +51,7 @@ opts =
     , Option [] ["size-only"] (NoArg [Rsync "--size-only"]) "run rsync with --size-only, skip files that match in size."
     , Option [] ["timeout"] (ReqArg (\t -> [Rsync $ "--timeout="++ t]) "TIME") "set I/O timeout in seconds."
     , Option [] ["bwlimit"] (ReqArg (\kbps -> [Rsync $ "--bwlimit=" ++ kbps]) "KBPS") "limit I/O bandwidth; KBytes per second."
+    , Option [] ["dump-man-page"] (NoArg []) "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output."
     ]
 
 manpage =
@@ -56,13 +59,15 @@ manpage =
             , sectionNum  	= General
             , shortDesc	  	= text "create incremental backups of directories using rsync and hardlinks."
             , synopsis	  	= text "archive [options] original backupdir"
-            , description 	= text "Create a backup of ORIGINAL in BACKUPDIR in a directory whose name is todays date.\
-                                       \The original may be on a remote machine.\
-                                       \This is achieved without wasting disk space on unchanged files using\
-                                       \a simple incremental backup technique I read about somewhere using\
-                                       \cp -al to create a hard linked copy of the previous backup and rsync\
-                                       \to modify that copy into a copy of the current directory.  It does use\
-                                       \a lot of inodes, but I haven't run out yet."
+            , description 	= text "Create a backup of " <> i <> text "ORIGINAL" <> p <> text " in " <> i <> text "BACKUPDIR" <> p <> 
+                                  text" in a directory whose name is todays date. \
+                                       \The original may be on a remote machine. \
+                                       \This is achieved without wasting disk space on unchanged files using \
+                                       \a simple incremental backup technique I read about somewhere using " <>
+                                       cw <> text "cp -al" <> 
+                                       p <> text" to create a hard linked copy of the previous backup and rsync \
+                                       \to modify that copy into a copy of the current directory.  It does use \
+                                       \a lot of inodes, but I haven't run out yet on Reiser 3."
             , options		= Just opts
             , extraSections	= Nothing
             , files		= Nothing
@@ -85,15 +90,18 @@ parseOptions args =
 main :: IO ()
 main =
     do args <- getArgs
+       when ("--dump-man-page" `elem` args) dumpManPage
        case parseOptions args of
-         (Left e) -> error (e ++ (usageInfo synopsis opts))
+         (Left e) -> usage manpage >>= hPutStrLn stderr >> exitFailure
          (Right (options, original, backup)) ->
               do res <- archive options original backup
                  case res of
                    (Left e) -> error (show e)
                    (Right r) -> hPutStrLn stderr (show r)
     where
-      synopsis = "archive [options] original backupdir"
+      dumpManPage :: IO ()
+      dumpManPage = 
+          putStrLn (show (ppMan (manpageToMan manpage))) >> exitWith ExitSuccess
 
 -- * JAS - Old Stuff, just here for reference until I am sure things are the same in the new system
 
@@ -118,6 +126,8 @@ oldGetOptions =
       processArgs (a, Nothing, b) (x : xs) = processArgs (a, Just x, b) xs
       processArgs (a, o, Nothing) (x : xs) = processArgs (a, o, Just x) xs
       processArgs _ (x : _) = error $ "Unexpected argument: " ++ x
+
+    
 
 rsyncArgs = ["-v", "-P", "-c", "--delete-excluded", "--delete-after", "--partial", "--force", "--size-only"]
 
