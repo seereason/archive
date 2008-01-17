@@ -17,30 +17,21 @@ import Control.Exception
 import Control.Monad
 import Data.List
 import Extra.HughesPJ
---import System.Time
---import System.Locale
---import System.Directory
 import System.IO
 import Data.Maybe
 import System.Environment
---import System.Cmd
 import System.Exit
---import Text.Regex
---import Data.Char(chr)
---import Data.Char
---import qualified Data.ByteString as B
---import Linspire.Unix.Process
 import Archive
 import Extra.Help
 import System.Console.GetOpt
 
 opts :: [OptDescr [Option]]
 opts =
-    [ Option [] ["prune"] (ReqArg (\n -> [Prune n]) "NUM") "limit the number of backup dirs to NUM."
-    , Option [] ["unlink"] (NoArg [Unlink]) "Keep only the most recent hard link. The newest backup is always complete, but the previous day will only include the files that changed or were removed."
-    , Option [] ["current"] (NoArg [Current]) "Create a link named 'current' to the new archive."
-    , Option [] ["exclude"] (ReqArg (\x -> [Rsync "--exclude", Rsync x]) "PATTERN") "Passed to rsync. Implies rsync's --delete-excluded flag (so that adding this flag makes files go away in newer backups)."
-    , Option ['n'] ["dry-run"] (NoArg [DryRun, Rsync "-n"]) "Do not do any file transfers, just report what would have happened."
+    [ -- Option [] ["prune"] (ReqArg (\n -> [Prune n]) "NUM") "limit the number of backup dirs to NUM."
+    -- , Option [] ["unlink"] (NoArg [Unlink]) "Keep only the most recent hard link. The newest backup is always complete, but the previous day will only include the files that changed or were removed."
+    -- , Option [] ["current"] (NoArg [Current]) "Create a link named 'current' to the new archive."
+    Option [] ["exclude"] (ReqArg (\x -> [Rsync "--exclude", Rsync x]) "PATTERN") "Passed to rsync. Implies rsync's --delete-excluded flag (so that adding this flag makes files go away in newer backups)."
+    -- , Option ['n'] ["dry-run"] (NoArg [DryRun, Rsync "-n"]) "Do not do any file transfers, just report what would have happened."
     , Option ['v'] ["verbose"] (NoArg [Rsync "-v"]) "run rsync with verbose option."
     , Option ['P'] [] (NoArg [Rsync "-P"]) "run rsync with -P, which is the same as --partial --progress."
     , Option ['c'] ["checksum"] (NoArg [Rsync "-c"]) "run rsync with -c, skip based on checksum, not mod-time & size."
@@ -94,73 +85,9 @@ main =
        case parseOptions args of
          (Left e) -> usage manpage >>= hPutStrLn stderr >> exitFailure
          (Right (options, original, backup)) ->
-              do res <- archive options original backup
-                 case res of
-                   (Left e) -> error (show e)
-                   (Right r) -> hPutStrLn stderr (show r)
+             do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup
+                return ()
     where
       dumpManPage :: IO ()
       dumpManPage = 
           putStrLn (show (ppMan (manpageToMan manpage))) >> exitWith ExitSuccess
-
--- * JAS - Old Stuff, just here for reference until I am sure things are the same in the new system
-
-oldGetOptions :: IO ([Option], String, String)
-oldGetOptions =
-    do args <- getArgs
-       case processArgs ([], Nothing, Nothing) args of
-         (_, Nothing, _) -> error $ "Missing source and destination arguments"
-         (_, _, Nothing) -> error $ "Missing destination argument"
-         (options, Just original, Just backup) -> return (options, original, backup)
-    where
-      processArgs (a, o, b) [] = (a, o, b)
-      processArgs (a, o, b) ("--prune" : x : xs) = processArgs (Prune x : a, o, b) xs
-      processArgs (a, o, b) ("--unlink" : xs) = processArgs (Unlink : a, o, b) xs
-      processArgs (a, o, b) ("--current" : xs) = processArgs (Current : a, o, b) xs
-      processArgs (a, o, b) ("--exclude" : x : xs) = processArgs (Rsync "--exclude" : Rsync x : a, o, b) xs
-      processArgs (a, o, b) ("-n" : xs) = processArgs (DryRun : Rsync "-n" : a, o, b) xs
-      processArgs (a, o, b) ("--dry-run" : xs) = processArgs (DryRun : Rsync "-n" : a, o, b) xs
-      processArgs (a, o, b) (x : xs) | elem x rsyncArgs = processArgs (Rsync x : a, o, b) xs
-      processArgs (a, o, b) (x : xs) | isPrefixOf "--timeout=" x = processArgs (Rsync x : a, o, b) xs
-      processArgs (a, o, b) (x : xs) | isPrefixOf "--bwlimit=" x = processArgs (Rsync x : a, o, b) xs
-      processArgs (a, Nothing, b) (x : xs) = processArgs (a, Just x, b) xs
-      processArgs (a, o, Nothing) (x : xs) = processArgs (a, o, Just x) xs
-      processArgs _ (x : _) = error $ "Unexpected argument: " ++ x
-
-    
-
-rsyncArgs = ["-v", "-P", "-c", "--delete-excluded", "--delete-after", "--partial", "--force", "--size-only"]
-
-
-
-oldusage :: String -> IO String
-oldusage message =
-    do
-      putStrLn . concat . intersperse "\n" $
-        [message,
-         "",
-         "Usage:",
-         "   archive [options] original backupdir",
-         "",
-         "Options:",
-         "  --prune <number>	-- limit the number of backup dirs to <number>",
-         "  --unlink		-- Keep only the most recent hard link.  The newest",
-         "		   backup is always complete, but the previous day",
-         "		   will only include the files that changed or were",
-         "		   removed.",
-         "  -A			-- Always create a new backup, without this option",
-         "		   today's backup will be updated if it already exists",
-         "  --exclude		-- Passed to rsync, implies rsync's --delete-excluded",
-         "		   flag (so that adding this flag makes files go away",
-         "		   in newer backups.)",
-         "  --current		-- Create a link named 'current' to the new archive.",
-         "",
-
-         "",
-         "Example crontab:",
-         " 0 1 * * * /root/bin/archive --prune 20 --exclude '/.mozilla/**/Cache/' --exclude '/.kde/share/cache/' root@dsf:/home/dsf /backups/dsf",
-         " 0 2 * * * /root/bin/archive --prune 20 root@p4:/home/audio /backups/audio",
-         " 20 2 * * * /root/bin/archive --prune 10 root@p4:/disks/hdc3/cdroms /backups/cdroms",
-         " 30 2 * * * /root/bin/archive --exclude '/.mozilla/**/Cache/' --exclude '/.kde/share/cache/' root@t22:/root /backups/ldt-t22",
-         " 40 2 * * * /root/bin/archive root@dsf:/var/lib/geneweb /backups/geneweb"]
-      return message
