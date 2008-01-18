@@ -1,4 +1,10 @@
-module Main where
+module UpdateMirror 
+    ( updateMirrorMain
+    , Option(..)
+    , Target(..)
+    , genericConfig
+    ) 
+    where
 
 import Control.Monad
 import Data.List
@@ -10,11 +16,13 @@ import System.IO
 import Archive
 import Target as T
 
-manpage =
-    Manpage { name		= "update-mirror"
+-- * General Stuff
+
+manpage progName targets =
+    Manpage { name		= progName 
             , sectionNum	= General
             , shortDesc		= text "tool to keep mirrors of various repositories up to date."
-            , synopsis		= text "update-mirror TARGET..."
+            , synopsis		= text (progName ++ " TARGET...")
             , description	= text "update the mirrors named on the command line."
             , H.options		= Nothing
             , extraSections	= Just [targetSection]
@@ -25,33 +33,11 @@ manpage =
             , authors		= Just [("Jeremy Shaw", "jeremy.shaw@linspire.com")]
             , seeAlso		= Nothing
             }
+        where
+          targetSection :: (ShowIn, Text, Elements)
+          targetSection = (InBoth, (text "TARGETS"), (showTargets targets))
 
-targetSection :: (ShowIn, Text, Elements)
-targetSection = (InBoth, (text "TARGETS"), (showTargets targets))
 
--- * Tests
-
-targets :: [Target]
-targets =
-    [ Target { prettyName = "ubuntu"
-             , src = [ "http://archive.ubuntu.com/ubuntu"
-                     , "http://mirror.anl.gov/ubuntu"
-                     ]
-             , dest = "/mnt/aoe/ubuntu"
-             , config = genericConfig "ubuntu" "%Y-%m-%d"
-             , T.options = [ Rsync "--exclude Contents-i386.gz"
-                         , Rsync "--exclude Contents-amd64.gz"
-                         ]
-             }
-    , Target { prettyName = "linuxmint"
-             , src = ["http://linuxmint.com/linuxmint"]
-             , dest = "/mnt/aoe/linuxmint"
-             , config = genericConfig "linuxmint" "%Y-%m-%d"
-             , T.options = [ Rsync "--exclude Contents-i386.gz"
-                           , Rsync "--exclude Contents-amd64.gz"
-                           ]
-             }
-    ]
 
 opts :: [OptDescr [Option]]
 opts =
@@ -73,8 +59,8 @@ opts =
     , Option [] ["dump-man-page"] (NoArg []) "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output."
     ]
 
-parseOptions :: [String] -> Either String ([Option], [String])
-parseOptions args =
+parseOptions :: [Target] -> [String] -> Either String ([Option], [String])
+parseOptions targets args =
     case getOpt Permute opts args of
          (extraOptions, tgts@(_:_), []) ->
              case tgts \\ (map prettyName targets) of
@@ -89,12 +75,14 @@ parseOptions args =
       singleton [_] = True
       singleton _ = False
 
-main = 
+updateMirrorMain :: [Target] -> IO ()
+updateMirrorMain targets = 
     do args <- getArgs
-       when ("--dump-man-page" `elem` args) (dumpManPage manpage)
-       case parseOptions args of
+       progName <- getProgName
+       when ("--dump-man-page" `elem` args) (dumpManPage (manpage progName targets))
+       case parseOptions targets args of
          (Left e) -> do hPutStrLn stderr e
-                        hPutStrLn stderr =<< usage manpage
+                        hPutStrLn stderr =<< usage (manpage progName targets)
          (Right (extraOptions, tgts)) ->
              do res <- archiveTargets extraOptions (filter (\t -> (prettyName t) `elem` args) targets)
                 putStrLn =<< renderWidth (ppResults res)
