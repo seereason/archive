@@ -81,13 +81,10 @@ parseOptions args =
 main :: IO ()
 main =
     do args <- getArgs
-       when ("--dump-man-page" `elem` args) dumpManPage
+       when ("--dump-man-page" `elem` args) (dumpManPage manpage)
        case parseOptions args of
          (Left e) -> usage manpage >>= hPutStrLn stderr >> exitFailure
          (Right (options, original, backup)) ->
              do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup
                 return ()
-    where
-      dumpManPage :: IO ()
-      dumpManPage = 
-          putStrLn (show (ppMan (manpageToMan manpage))) >> exitWith ExitSuccess
+      
