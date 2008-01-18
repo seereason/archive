@@ -160,7 +160,11 @@ genericConfig baseDirName formatString =
           baseDirName ++ "-" ++ formatTime defaultTimeLocale formatString zonedtime
 
 -- |You can (and should) test that all the laws hold for your config
--- by using the 'configLaws' function. The user supplied configuration
+-- by using the 'configLaws' function. For example,
+--
+-- >	Test.HUnit.Text.runTestTT (configLaws (genericConfig "snapshot" "%Y-%m-%d"))
+--
+-- The user supplied configuration
 -- must uphold the following laws:
 --
 -- 1. completed directories should be listed chronological when sorted
