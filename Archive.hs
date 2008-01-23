@@ -14,6 +14,7 @@ import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
 import Linspire.Unix.FilePath
+import Linspire.Unix.Files
 import System.Directory
 import System.IO
 import System.IO.Error
@@ -122,6 +123,7 @@ data Option
     | Current		-- ^Unimplemented
     | Prune String	-- ^Unimplemented 
     | -}  Rsync String	-- ^Pass one or more additional arguments to the rsync sub-process
+    | NoUpdateSymlink
     deriving (Eq, Show)
 
 -- |Did the update result in any changes
@@ -231,6 +233,7 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) =
                   ExitSuccess ->
                       do renameDirectory inProgressFP completedFP `catch`
                            (\e -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
+                         unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP "current")
                          return mChanges
 
 rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Maybe UpdateResult)
@@ -264,7 +267,7 @@ rsync options linkDests src dest =
 
     where
       rsyncOption (Rsync x) = Just x
-      -- rsyncOption _ = Nothing
+      rsyncOption _ = Nothing
 
 -- return the latest *complete* archive, latest *inprogress* archives which are
 -- newer than the latest *complete*, and a list of any other

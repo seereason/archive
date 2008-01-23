@@ -42,6 +42,7 @@ opts =
     , Option [] ["size-only"] (NoArg [Rsync "--size-only"]) "run rsync with --size-only, skip files that match in size."
     , Option [] ["timeout"] (ReqArg (\t -> [Rsync $ "--timeout="++ t]) "TIME") "set I/O timeout in seconds."
     , Option [] ["bwlimit"] (ReqArg (\kbps -> [Rsync $ "--bwlimit=" ++ kbps]) "KBPS") "limit I/O bandwidth; KBytes per second."
+    , Option [] ["no-update-symlink"] (NoArg [NoUpdateSymlink]) "do not automatically update the symlink named 'current' to point the latest snapshot."
     , Option [] ["dump-man-page"] (NoArg []) "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output."
     ]
 
