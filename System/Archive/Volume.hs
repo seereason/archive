@@ -1,6 +1,6 @@
-module Volume where
+module System.Archive.Volume where
 
-import Ugly.Form
+import Ugly.HtmlForm
 import Ugly.Encoding.Octets
 import Ugly.URI
 import Text.XHtml.Transitional

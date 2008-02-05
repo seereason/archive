@@ -6,20 +6,21 @@ import UpdateMirror
 
 mytargets :: [Target]
 mytargets =
-    [ Target { prettyName = "linuxmint"
+    [ Target { prettyName = "ubuntu"
+             , src = [ "rsync://ubuntu.cs.utah.edu/ubuntu"
+                     , "rsync://mirror.anl.gov/ubuntu" 
+                     ]
+             , dest = "/srv/mirrors/ubuntu.com"
+             , config = genericConfig "ubuntu" "%Y-%m-%d_%H:%M:%S"
+             , options = (exclude defaultExcludeArchs [] True) ++ [Rsync "--progress", Rsync "--stats"]
+             }
+    {- Target { prettyName = "linuxmint"
              , src = [ "rsync://www.linuxmint.com/repository/" ]
              , dest = "/tmp/linuxmint.com/"
              , config = genericConfig "linuxmint" "%Y-%m-%d"
              , options = (exclude defaultExcludeArchs [] True) ++ [Rsync "--dry-run"]
              }
-    , Target { prettyName = "ubuntu"
-             , src = [ "rsync://ubuntu.cs.utah.edu/ubuntu"
-                     , "rsync://mirror.anl.gov/ubuntu" 
-                     ]
-             , dest = "/tmp/ubuntu.com/"
-             , config = genericConfig "ubuntu" "%Y-%m-%d"
-             , options = (exclude defaultExcludeArchs [] True) ++ [Rsync "--progress"]
-             }
+    , -} 
     ]
 
 defaultExcludeArchs :: [[Char]]
@@ -57,6 +58,7 @@ exclude arches dists excludeOther = concatMap excludeArch arches ++ map excludeD
        [ Rsync $ "--exclude=debian-installer"
        , Rsync $ "--exclude=debian-installer-*"
        , Rsync $ "--exclude=installer-*"
+       , Rsync $ "--exclude=daily-installer-*"
        , Rsync $ "--exclude=project"
        , Rsync $ "--exclude=indices"
        ]

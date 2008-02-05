@@ -1,4 +1,4 @@
-module UpdateMirror 
+module System.Archive.UpdateMirror 
     ( updateMirrorMain
     , Option(..)
     , Target(..)
@@ -13,8 +13,9 @@ import Extra.HughesPJ
 import System.Console.GetOpt
 import System.Environment
 import System.IO
-import Archive
-import Target as T
+
+import System.Archive.Archive
+import System.Archive.Target as T
 
 -- * General Stuff
 
@@ -57,6 +58,7 @@ opts =
     , Option [] ["timeout"] (ReqArg (\t -> [Rsync $ "--timeout="++ t]) "TIME") "set I/O timeout in seconds."
     , Option [] ["bwlimit"] (ReqArg (\kbps -> [Rsync $ "--bwlimit=" ++ kbps]) "KBPS") "limit I/O bandwidth; KBytes per second."
     , Option [] ["dump-man-page"] (NoArg []) "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output."
+    , Option [] ["no-update-symlink"] (NoArg [NoUpdateSymlink]) "do not update the symlink, current, after the update is done."
     ]
 
 parseOptions :: [Target] -> [String] -> Either String ([Option], [String])
@@ -84,5 +86,5 @@ updateMirrorMain targets =
          (Left e) -> do hPutStrLn stderr e
                         hPutStrLn stderr =<< usage (manpage progName targets)
          (Right (extraOptions, tgts)) ->
-             do res <- archiveTargets extraOptions (filter (\t -> (prettyName t) `elem` args) targets)
+             do res <- archiveTargets extraOptions (filter (\t -> (prettyName t) `elem` tgts) targets)
                 putStrLn =<< renderWidth (ppResults res)

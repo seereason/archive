@@ -1,0 +1,19 @@
+Name:            archive
+Version:         1.0
+Cabal-Version:   >= 1.2
+License:         BSD3
+License-File:    COPYRIGHT
+Author:          David Fox, Jeremy Shaw
+Synopsis:        A library and programs for creating hardlinked incremental archives or backups
+Stability:       alpha
+Build-Type:      Simple
+
+Library
+  Build-Depends:   base, regex-posix, HUnit, process, unix, old-locale, directory, Unixutils, time, bytestring, mtl, xhtml, Extra, pretty, Ugly
+  Exposed-Modules: System.Archive.Archive, System.Archive.Target, System.Archive.UpdateMirror
+  ghc-options:	-O2 -fasm -W
+
+Executable archive
+  Main-Is:         util/ArchiveMain.hs
+  -- Hs-Source-Dirs:  util
+  ghc-options:	-O2 -fasm -W

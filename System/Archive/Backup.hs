@@ -1,6 +1,6 @@
 -- |Data type representing something to back up, where it gets
 -- backed up to, how often to back it up, etc.
-module Backup
+module System.Archive.Backup
     ( BackupSpec(..)
     , VolumeSpec(..)
     , user
@@ -15,7 +15,7 @@ import Ugly.Form
 import Ugly.Html.Style
 import Ugly.Encoding.Octets
 import Text.XHtml.Transitional hiding (archive)
-import Volume
+import System.Archive.Volume
 import Control.Monad.Reader
 import qualified Data.ByteString.Lazy as B
 

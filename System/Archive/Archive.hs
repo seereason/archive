@@ -1,4 +1,4 @@
-module Archive 
+module System.Archive.Archive 
     ( Option(..)
     , UpdateResult(..)
     , Config(..)

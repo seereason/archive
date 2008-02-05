@@ -1,9 +1,8 @@
-module Target where
+module System.Archive.Target where
 
-import Archive
+import System.Archive.Archive
 import Control.Monad
 import Data.Monoid
-import Extra.HughesPJ
 import qualified Text.PrettyPrint.HughesPJ as D
 import System.IO.Error
 -- import Text.PrettyPrint.HughesPJ
@@ -35,16 +34,18 @@ showTarget (Target prettyName srcs dest _ options) =
       showOptions opts = mconcat (map showOption opts)
       showOption :: Option -> Elements
       showOption (Rsync str) = text "Rsync " <> cw <> (text str) <> p <> br
+      showOption NoUpdateSymlink = text "NoUpdateSymlink" <> br
 
 -- * Archive Target
 
 archiveTargets :: [Option] -> [Target] -> IO [(Target, Either IOError (Maybe UpdateResult))]
 archiveTargets options targets = liftM (zip targets) $ mapM (archiveTarget options) targets
 
+-- TODO: create repository -> current symlink
 archiveTarget :: [Option] -> Target -> IO (Either IOError (Maybe UpdateResult))
 archiveTarget _ (Target prettyName [] _ _ _) = 
     return $ Left (userError $ "target " ++ prettyName ++ " does not include any sources")
-archiveTarget extraOptions (Target prettyName (src:_) dest config options) =
+archiveTarget extraOptions (Target _prettyName (src:_) dest config options) =
     try (archive config (options ++ extraOptions) src dest)
 
 ppResults :: [(Target, Either IOError (Maybe UpdateResult))] -> D.Doc

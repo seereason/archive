@@ -13,15 +13,13 @@
 --   <dest>/<date>
 module Main where
 
-import Control.Exception
 import Control.Monad
 import Data.List
-import Extra.HughesPJ
 import System.IO
 import Data.Maybe
 import System.Environment
 import System.Exit
-import Archive
+import System.Archive.Archive
 import Extra.Help
 import System.Console.GetOpt
 
@@ -84,7 +82,9 @@ main =
     do args <- getArgs
        when ("--dump-man-page" `elem` args) (dumpManPage manpage)
        case parseOptions args of
-         (Left e) -> usage manpage >>= hPutStrLn stderr >> exitFailure
+         (Left e) -> hPutStrLn stderr e >>
+                    usage manpage >>= hPutStrLn stderr >> 
+                    exitFailure
          (Right (options, original, backup)) ->
              do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup
                 return ()
