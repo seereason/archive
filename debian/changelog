@@ -1,5 +1,11 @@
+haskell-archive (1.1) unstable; urgency=low
+
+  * Fix import path
+
+ -- Jeremy SHaw <jeremy@n-heptane.com>  Tue, 12 Feb 2008 14:48:50 -0800
+
 haskell-archive (1.0) unstable; urgency=low
 
   * initial release
 
- -- Jeremy Shawe <jeremy@n-heptane.com>  Tue, 05 Feb 2008 12:54:08 -0800
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Tue, 05 Feb 2008 12:54:08 -0800

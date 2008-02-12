@@ -1,6 +1,6 @@
 module Main where
 
-import UpdateMirror
+import System.Archive.UpdateMirror
 
 -- * Update List of Targets Here
 
