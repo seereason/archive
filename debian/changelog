@@ -1,3 +1,9 @@
+haskell-archive (1.2.1) unstable; urgency=low
+
+  * expose System.Archive.AptMethods
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Tue, 19 Feb 2008 18:34:12 -0800
+
 haskell-archive (1.2) unstable; urgency=low
 
   * Add support for mirroring debian repositories using apt method

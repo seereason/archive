@@ -10,7 +10,7 @@ Build-Type:      Simple
 
 Library
   Build-Depends:   base, regex-posix, HUnit, process, unix, old-locale, directory, Unixutils, time, bytestring, mtl, xhtml, Extra, pretty, Ugly, debian >= 2.19, debian-mirror
-  Exposed-Modules: System.Archive.Archive, System.Archive.Target, System.Archive.UpdateMirror
+  Exposed-Modules: System.Archive.Archive, System.Archive.Target, System.Archive.UpdateMirror, System.Achive.AptMethods
   ghc-options:	-O2 -fasm -W
 
 Executable archive
