@@ -15,6 +15,8 @@ import Data.Time
 import Data.Time.Clock.POSIX
 import Linspire.Unix.FilePath
 import Linspire.Unix.Files
+import Ugly.URI
+import System.Archive.AptMethods
 import System.Directory
 import System.IO
 import System.IO.Error
@@ -24,6 +26,7 @@ import System.Process
 import System.Exit
 import Test.HUnit.Base
 import Text.Regex.Posix
+
 
 
 {-
@@ -212,29 +215,36 @@ configLaws config =
                                (not (isComplete config ip) && not (isInProgress config cp)))
            ]
 
-archive :: Config -> [Option] -> FilePath -> FilePath -> IO (Maybe UpdateResult)
-archive config options src backupdir = 
+archive :: Config -> [Option] -> FilePath -> FilePath -> [(String, [String])] -> IO (Maybe UpdateResult)
+archive config options src backupdir dists = 
     do dirs <- getSnapshotDirectories (const True) backupdir
        let report = latest config dirs
-       update config options src backupdir report
+       update config options src backupdir report dists
 
-update :: Config -> [Option] -> FilePath -> FilePath -> Report -> IO (Maybe UpdateResult)
-update config options src snapshotDir (Found mPrev inprogress _obsolete) =
+update :: Config -> [Option] -> FilePath -> FilePath -> Report -> [(String, [String])] -> IO (Maybe UpdateResult)
+update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
     do ct <- getZonedTime
        if mPrev == (Just (mkName config ct))
         then error "update in place" -- updateInPlace (mkName ct)
         else do let inProgressFP = snapshotDir +/+ (mkInProgress config ct)
                     completedFP  = snapshotDir +/+ (mkName config ct)
-                (ec, mChanges) <- rsync options (map (snapshotDir +/+) (inprogress ++ maybeToList mPrev)) src inProgressFP
+                (ec, mChanges) <- doUpdate options (map (snapshotDir +/+) inprogress) (map (snapshotDir +/+) (maybeToList mPrev)) src inProgressFP dists
                 case ec of
                   (ExitFailure n) ->
-                      do hPutStrLn stderr ("rsync failed with exit code " ++ show n)
+                      do hPutStrLn stderr ("sub-process failed with exit code " ++ show n)
                          exitWith (ExitFailure n)
                   ExitSuccess ->
                       do renameDirectory inProgressFP completedFP `catch`
                            (\e -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
                          unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP "current")
                          return mChanges
+    where
+      doUpdate options partial prevBasePaths src basePath dists =
+          do let remoteURI = maybe (error $ "Not a valid uri: " ++ src) id (parseURI src)
+             case uriScheme remoteURI of
+               "rsync:" -> rsync options (partial ++ prevBasePaths) src basePath
+               _ -> do ec <- updateViaAptMethods prevBasePaths remoteURI basePath dists
+                       return (ec, Nothing)
 
 rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Maybe UpdateResult)
 rsync options linkDests src dest =
@@ -289,7 +299,11 @@ getSnapshotDirectories :: (FilePath -> Bool) -- ^ only return directories that m
                        -> FilePath -- ^ path to directory containing snapshots
                        -> IO [FilePath]
 getSnapshotDirectories nameP dir =
-    do c <- liftM (filter (\fp -> (fp /= ".") && (fp /= "..") && nameP fp)) (getDirectoryContents dir)
+    do c <- liftM (filter (\fp -> (fp /= ".") && (fp /= "..") && nameP fp)) ((getDirectoryContents dir) 
+                                                                             `catch`
+                                                                             (\e -> if isDoesNotExistError e
+                                                                                     then return []
+                                                                                     else ioError e))
        filterM (liftM isRealDirectory . getFileStatus . (dir +/+))  c
     where
       isRealDirectory :: FileStatus -> Bool

@@ -6,25 +6,40 @@ import System.Archive.UpdateMirror
 
 mytargets :: [Target]
 mytargets =
-    [ Target { prettyName = "ubuntu"
-             , src = [ "rsync://ubuntu.cs.utah.edu/ubuntu"
-                     , "rsync://mirror.anl.gov/ubuntu" 
-                     ]
-             , dest = "/srv/mirrors/ubuntu.com"
-             , config = genericConfig "ubuntu" "%Y-%m-%d_%H:%M:%S"
-             , options = (exclude defaultExcludeArchs [] True) ++ [Rsync "--progress", Rsync "--stats"]
-             }
-    {- Target { prettyName = "linuxmint"
-             , src = [ "rsync://www.linuxmint.com/repository/" ]
-             , dest = "/tmp/linuxmint.com/"
-             , config = genericConfig "linuxmint" "%Y-%m-%d"
-             , options = (exclude defaultExcludeArchs [] True) ++ [Rsync "--dry-run"]
-             }
-    , -} 
+    [ RsyncTarget { prettyName = "ubuntu"
+                  , src = [ "rsync://ubuntu.cs.utah.edu/ubuntu"
+                          , "rsync://mirror.anl.gov/ubuntu" 
+                          ]
+                  , dest = "/srv/mirrors/ubuntu.com"
+                  , config = genericConfig "ubuntu" "%Y-%m-%d_%H:%M:%S"
+                  , options = (exclude defaultExcludeArches [] True) ++ [Rsync "--progress", Rsync "--stats"]
+                  }
+    , AptTarget   { prettyName = "linuxmint"
+                  , src = [ "http://www.linuxmint.com/repository/" ]
+                  , dest = "/tmp/linuxmint.com/"
+                  , config = genericConfig "linuxmint" "%Y-%m-%d_%H:%M:%S"
+                  , options = []
+                  , dists = [ ("daryna", ["i386"])
+                            ]
+                  }
+    , AptTarget   { prettyName = "test-apt"
+                  , src = [ "http://fattushis/addons/ubuntu/CNRUbuntuExtra/" ]
+                  , dest = "/tmp/test-mirror/"
+                  , config = genericConfig "test" "%Y-%m-%d_%H:%M:%S"
+                  , options = []
+                  , dists = [ ("gutsy-extra", ["i386"])
+                            ]
+                  }
+    , RsyncTarget { prettyName = "test-rsync"
+                  , src = [ "rsync://fattushis/srv/addons/ubuntu/CNRUbuntuExtra/" ]
+                  , dest = "/tmp/test-mirror/"
+                  , config = genericConfig "test" "%Y-%m-%d_%H:%M:%S"
+                  , options = (exclude defaultExcludeArches [] True) ++ [Rsync "--progress", Rsync "--stats"]
+                  }
     ]
 
-defaultExcludeArchs :: [[Char]]
-defaultExcludeArchs = 
+defaultExcludeArches :: [[Char]]
+defaultExcludeArches = 
     [ "alpha"
     , "ia64"
     , "arm"
