@@ -86,6 +86,6 @@ main =
                     usage manpage >>= hPutStrLn stderr >> 
                     exitFailure
          (Right (options, original, backup)) ->
-             do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup
+             do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup []
                 return ()
       

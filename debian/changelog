@@ -1,3 +1,10 @@
+haskell-archive (1.2) unstable; urgency=low
+
+  * Add support for mirroring debian repositories using apt method
+    backends
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Tue, 19 Feb 2008 17:18:15 -0800
+
 haskell-archive (1.1) unstable; urgency=low
 
   * Fix import path
