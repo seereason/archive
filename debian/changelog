@@ -1,3 +1,11 @@
+haskell-archive (1.2.2) unstable; urgency=low
+
+  * Create 'current' link in correct location
+  * Add linkName to Config
+  * create linkName link if it does not exist
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Tue, 19 Feb 2008 19:49:35 -0800
+
 haskell-archive (1.2.1) unstable; urgency=low
 
   * expose System.Archive.AptMethods

@@ -1,5 +1,6 @@
 module Main where
 
+import System.Environment (withArgs)
 import System.Archive.UpdateMirror
 
 -- * Update List of Targets Here

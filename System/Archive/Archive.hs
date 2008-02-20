@@ -145,6 +145,7 @@ data Config
              , isComplete :: FilePath -> Bool		-- ^ predicate which tests if a filepath represents a completed snapshot
              , mkInProgress :: ZonedTime -> FilePath	-- ^ generate a filepath for the snapshot directory to be called while the download is in progress
              , isInProgress :: FilePath -> Bool		-- ^ predicate which tests if a file represents an inprogress snapshot
+             , linkName :: FilePath			-- ^ name of symlink that points to current snapshot
              }
 
 -- * Example Configuration
@@ -159,6 +160,7 @@ genericConfig baseDirName formatString =
            , isComplete = \fp -> not $ any (flip isPrefixOf fp) ["outofdate.", "inprogress.", "incomplete."]
            , mkInProgress = \zonedtime -> "inprogress." ++ mkName' zonedtime
            , isInProgress = isPrefixOf "inprogress."
+           , linkName = baseDirName
            }
     where
       mkName' zonedtime =
@@ -236,7 +238,10 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
                   ExitSuccess ->
                       do renameDirectory inProgressFP completedFP `catch`
                            (\e -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
-                         unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP "current")
+                         unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP (snapshotDir +/+ "current"))
+                         let linkPath = snapshotDir +/+ (linkName config)
+                         linkExists <- fileExist linkPath
+                         unless linkExists $ forceSymbolicLink (snapshotDir +/+ "current") linkPath
                          return mChanges
     where
       doUpdate options partial prevBasePaths src basePath dists =
