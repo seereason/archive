@@ -2,6 +2,7 @@ module System.Archive.UpdateMirror
     ( updateMirrorMain
     , Option(..)
     , Target(..)
+    , Config(..)
     , genericConfig
     ) 
     where
