@@ -1,3 +1,9 @@
+haskell-archive (1.2.4) unstable; urgency=low
+
+  * Updated to work with Extra.Help wrapper around GetOpt
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Fri, 22 Feb 2008 11:58:23 -0800
+
 haskell-archive (1.2.3) unstable; urgency=low
 
   * System.Archive.UpdateMirror now reexports Config(..)

@@ -11,7 +11,6 @@ import Control.Monad
 import Data.List
 import Extra.Help as H
 import Extra.HughesPJ
-import System.Console.GetOpt
 import System.Environment
 import System.IO
 
@@ -39,27 +38,25 @@ manpage progName targets =
           targetSection :: (ShowIn, Text, Elements)
           targetSection = (InBoth, (text "TARGETS"), (showTargets targets))
 
-
-
 opts :: [OptDescr [Option]]
 opts =
     [ -- Option [] ["prune"] (ReqArg (\n -> [Prune n]) "NUM") "limit the number of backup dirs to NUM."
     -- , Option [] ["unlink"] (NoArg [Unlink]) "Keep only the most recent hard link. The newest backup is always complete, but the previous day will only include the files that changed or were removed."
     -- , Option [] ["current"] (NoArg [Current]) "Create a link named 'current' to the new archive."
-    Option [] ["exclude"] (ReqArg (\x -> [Rsync "--exclude", Rsync x]) "PATTERN") "Passed to rsync. Implies rsync's --delete-excluded flag (so that adding this flag makes files go away in newer backups)."
+    Option [] ["exclude"] (ReqArg (\x -> [Rsync "--exclude", Rsync x]) "PATTERN") (text "Passed to rsync. Implies rsync's --delete-excluded flag (so that adding this flag makes files go away in newer backups).")
     -- , Option ['n'] ["dry-run"] (NoArg [DryRun, Rsync "-n"]) "Do not do any file transfers, just report what would have happened."
-    , Option ['v'] ["verbose"] (NoArg [Rsync "-v"]) "run rsync with verbose option."
-    , Option ['P'] [] (NoArg [Rsync "-P"]) "run rsync with -P, which is the same as --partial --progress."
-    , Option ['c'] ["checksum"] (NoArg [Rsync "-c"]) "run rsync with -c, skip based on checksum, not mod-time & size."
-    , Option [] ["delete-excluded"] (NoArg [Rsync "--delete-excluded"]) "run rsync with --delete-excluded, also delete excluded files from dest dirs."
-    , Option [] ["delete-after"] (NoArg [Rsync "--delete-after"]) "run rsync with --delete-after, Request  that  the file-deletions on the receiving side be done after the transfer has completed."
-    , Option [] ["partial"] (NoArg [Rsync "--partial"]) "run rsync with --partial, keep partially transferred files."
-    , Option [] ["force"] (NoArg [Rsync "--force"]) "run rsync with --force, force deletion of dirs even if not empty."
-    , Option [] ["size-only"] (NoArg [Rsync "--size-only"]) "run rsync with --size-only, skip files that match in size."
-    , Option [] ["timeout"] (ReqArg (\t -> [Rsync $ "--timeout="++ t]) "TIME") "set I/O timeout in seconds."
-    , Option [] ["bwlimit"] (ReqArg (\kbps -> [Rsync $ "--bwlimit=" ++ kbps]) "KBPS") "limit I/O bandwidth; KBytes per second."
-    , Option [] ["dump-man-page"] (NoArg []) "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output."
-    , Option [] ["no-update-symlink"] (NoArg [NoUpdateSymlink]) "do not update the symlink, current, after the update is done."
+    , Option ['v'] ["verbose"] (NoArg [Rsync "-v"]) (text "run rsync with verbose option.")
+    , Option ['P'] [] (NoArg [Rsync "-P"]) (text "run rsync with -P, which is the same as --partial --progress.")
+    , Option ['c'] ["checksum"] (NoArg [Rsync "-c"]) (text "run rsync with -c, skip based on checksum, not mod-time & size.")
+    , Option [] ["delete-excluded"] (NoArg [Rsync "--delete-excluded"]) (text "run rsync with --delete-excluded, also delete excluded files from dest dirs.")
+    , Option [] ["delete-after"] (NoArg [Rsync "--delete-after"]) (text "run rsync with --delete-after, Request  that  the file-deletions on the receiving side be done after the transfer has completed.")
+    , Option [] ["partial"] (NoArg [Rsync "--partial"]) (text "run rsync with --partial, keep partially transferred files.")
+    , Option [] ["force"] (NoArg [Rsync "--force"]) (text "run rsync with --force, force deletion of dirs even if not empty.")
+    , Option [] ["size-only"] (NoArg [Rsync "--size-only"]) (text "run rsync with --size-only, skip files that match in size.")
+    , Option [] ["timeout"] (ReqArg (\t -> [Rsync $ "--timeout="++ t]) "TIME") (text "set I/O timeout in seconds.")
+    , Option [] ["bwlimit"] (ReqArg (\kbps -> [Rsync $ "--bwlimit=" ++ kbps]) "KBPS") (text "limit I/O bandwidth; KBytes per second.")
+    , Option [] ["dump-man-page"] (NoArg []) (text "dump the manpage for this program on stdout and exit immediately. Use groff -mandoc to process the output.")
+    , Option [] ["no-update-symlink"] (NoArg [NoUpdateSymlink]) (text "do not update the symlink, current, after the update is done.")
     ]
 
 parseOptions :: [Target] -> [String] -> Either String ([Option], [String])
