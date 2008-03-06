@@ -1,3 +1,9 @@
+haskell-archive (1.2.5) unstable; urgency=low
+
+  * Updated Linspire.Unix.* -> System.Unix.*
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Wed, 05 Mar 2008 17:27:16 -0800
+
 haskell-archive (1.2.4) unstable; urgency=low
 
   * Updated to work with Extra.Help wrapper around GetOpt

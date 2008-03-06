@@ -13,8 +13,8 @@ import Data.List
 import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
-import Linspire.Unix.FilePath
-import Linspire.Unix.Files
+import System.Unix.FilePath
+import System.Unix.Files
 import Ugly.URI
 import System.Archive.AptMethods
 import System.Directory
@@ -198,6 +198,8 @@ genericConfig baseDirName formatString =
 -- 
 -- >	(\fp -> (isInProgress fp) == True => (isComplete   fp) == False) &&
 -- >	(\fp -> (isCompletefp fp) == True => (isInProgress fp) == False))
+--
+-- TODO: linkName must be a valid filename (ie. not null)
 configLaws :: Config -> Test
 configLaws config =
     let zt0 =  utcToZonedTime utc (posixSecondsToUTCTime  (realToFrac (0 :: Integer)))

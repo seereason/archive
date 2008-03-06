@@ -11,7 +11,7 @@ import Debian.Apt.Methods
 import Debian.Apt.Index hiding (update)
 import Debian.Control.ByteString
 import Debian.Mirror
-import Linspire.Unix.FilePath
+import System.Unix.FilePath
 import System.Directory
 import System.Exit
 import System.Posix.Files

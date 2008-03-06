@@ -5,7 +5,7 @@ import Ugly.Encoding.Octets
 import Ugly.URI
 import Text.XHtml.Transitional
 import Control.Monad.Reader
-import Linspire.Unix.Process
+import System.Unix.Process
 import qualified Data.ByteString.Char8 as B
 -- Debug
 import System.IO

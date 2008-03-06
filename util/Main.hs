@@ -10,7 +10,7 @@ import Ugly.URI
 import Data.Maybe
 import Data.List
 --import Text.Regex
-import Linspire.Unix.Process
+import System.Unix.Process
 import qualified Data.ByteString.Char8 as B
 
 main :: IO ()
