@@ -13,9 +13,9 @@ import Data.List
 import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
+import Network.URI
 import System.Unix.FilePath
 import System.Unix.Files
-import Ugly.URI
 import System.Archive.AptMethods
 import System.Directory
 import System.IO

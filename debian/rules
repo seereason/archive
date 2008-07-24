@@ -1,14 +1,2 @@
 #!/usr/bin/make -f
-include $(CURDIR)/debian/hlibrary.mk
-
-
-binary-fixup/libghc6-archive-dev::
-	mkdir -p debian/archive/usr/bin
-	mv debian/libghc6-archive-dev/usr/lib/haskell-packages/ghc6/bin/archive debian/archive/usr/bin
-
-binary-fixup/libghc6-archive-prof::
-	rm debian/libghc6-archive-prof/usr/lib/haskell-packages/ghc6/bin/archive
-
-
-binary-fixup/libhugs-archive::
-	rm debian/libhugs-archive/usr/bin/archive
+include /usr/share/haskell-devscripts/hlibrary.mk

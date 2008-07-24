@@ -15,7 +15,7 @@ import System.Unix.FilePath
 import System.Directory
 import System.Exit
 import System.Posix.Files
-import Ugly.URI
+import Network.URI
 
 test =
     fetchOrLink [] (fromJust $ parseURI "http://archive.ubuntu.com/ubuntu/dists/gutsy/Release") "/tmp/curr" (Just "/tmp/prev") 
@@ -27,7 +27,6 @@ myCallbacks =
                             \uri size lastModified resumePoint filename hashes imsHit -> 
                                 putStrLn $ uriToString' uri ++ " downloaded" ++ maybe "." (" to " ++) filename
                       }
-                  
 
 uriDoneCBLink existingFP = \uri size lastModified resumePoint filename hashes imsHit -> 
             if imsHit
@@ -35,7 +34,7 @@ uriDoneCBLink existingFP = \uri size lastModified resumePoint filename hashes im
                      putStrLn $ uriToString' uri ++ " hardlinked."
              else putStrLn $ uriToString' uri ++ " downloaded" ++ maybe "." (" to " ++) filename
 
-
+uriToString' uri = uriToString id uri ""
 -- |if the target files already exists, we will always break any
 -- hardlinks before attempting to fetch. So, even if the file is not
 -- updated.
@@ -130,12 +129,12 @@ updateViaAptMethods prevBasePaths remoteURI basePath dists =
              mapM_ fetch (["Release.gpg"] ++ map (\arch -> "Contents-" ++ arch ++ ".gz") arches)
       fetchPoolFile :: [FilePath] -> FilePath -> FileTuple -> IO (Maybe FileTuple)
       fetchPoolFile prevBasePaths basePath ft@(checksum, size, filename) =
-          do doneAlready <- fileExist (basePath +/+ filename) -- ^ TODO: check size/md5sum
+          do doneAlready <- fileExist (basePath +/+ filename) -- TODO: check size/md5sum
              if doneAlready
                 then do putStrLn $ filename ++ " already exists in pool."
                         return Nothing
                 else do
-                  ensureParentDirectoryExists (basePath +/+ filename) -- ^ silly, but this gets us a log message, so..
+                  ensureParentDirectoryExists (basePath +/+ filename) -- silly, but this gets us a log message, so..
                   res <- fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ filename }) (basePath +/+ filename) (fmap (+/+ filename) prevBasePath)
                   if res
                      then return Nothing
