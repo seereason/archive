@@ -1,3 +1,9 @@
+haskell-archive (1.2.6) unstable; urgency=low
+
+  * Updated haskell-extra:Extra.Help -> haskell-help:Text.Help 
+
+ -- Jeremy Shaw <jeremy@n-heptane.com>  Fri, 25 Jul 2008 17:55:55 -0700
+
 haskell-archive (1.2.5) unstable; urgency=low
 
   * Updated Linspire.Unix.* -> System.Unix.*

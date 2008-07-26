@@ -9,7 +9,7 @@ module System.Archive.UpdateMirror
 
 import Control.Monad
 import Data.List
-import Extra.Help as H
+import Text.Help as H
 import Extra.HughesPJ
 import System.Environment
 import System.IO

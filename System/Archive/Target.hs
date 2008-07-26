@@ -8,7 +8,7 @@ import qualified Text.PrettyPrint.HughesPJ as D
 import System.IO.Error
 -- import Text.PrettyPrint.HughesPJ
 
-import Extra.Help hiding (options)
+import Text.Help hiding (options)
 
 -- * Data Type
 
