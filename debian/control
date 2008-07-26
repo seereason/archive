@@ -9,7 +9,7 @@ Standards-Version: 3.7.2.2
 Package: libghc6-archive-dev
 Section: libdevel
 Architecture: any
-Depends: ${haskell:Depends}, libghc6-mtl-dev, libghc6-extra-dev (>= 1.11), libghc6-unixutils-dev, libghc6-xhtml-dev, libghc6-hunit-dev, libghc6-debian-dev (>= 2.19), libghc6-debian-mirror-dev
+Depends: ${haskell:Depends}, libghc6-mtl-dev, libghc6-extra-dev (>= 1.11), libghc6-unixutils-dev, libghc6-xhtml-dev, libghc6-hunit-dev, libghc6-debian-dev (>= 2.19), libghc6-debian-mirror-dev, libghc6-help-dev
 Description: A library for creating hardlinked mirrors/backups
  This package contains the libraries compiled for GHC 6.
 
@@ -23,7 +23,7 @@ Description: A library for creating hardlinked mirrors/backups
 Package: haskell-archive-doc
 Section: doc
 Architecture: all
-Depends: ghc6-doc, libghc6-mtl-doc, haskell-extra-doc, haskell-unixutils-doc, libghc6-xhtml-doc, haskell-debian-doc, haskell-debian-mirror-doc
+Depends: ghc6-doc, libghc6-mtl-doc, haskell-extra-doc, haskell-unixutils-doc, libghc6-xhtml-doc, haskell-debian-doc, haskell-debian-mirror-doc, haskell-help-doc
 Description: A library for creating hardlinked mirrors/backups
  This package contains the documentation.
 
