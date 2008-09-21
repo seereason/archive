@@ -2,8 +2,8 @@ Source: haskell-archive
 Priority: optional
 Section: devel
 Maintainer: David Fox <dsf@seereason.org>
-Build-Depends: debhelper (>= 5.0.0), cdbs, haskell-devscripts-cdbs, cabal-debian, ghc6 (>=6.8), ghc6-prof, libghc6-mtl-prof, libghc6-extra-prof (>= 1.11), libghc6-unixutils-prof, libghc6-xhtml-prof, libghc6-hunit-prof, libghc6-debian-dev (>= 2.19), haskell-debian-doc, libghc6-debian-mirror-dev, haskell-debian-mirror-doc, libghc6-regex-posix-prof, haskell-regex-posix-doc, libghc6-hunit-doc, libghc6-network-prof, libghc6-network-doc, libghc6-time-prof, libghc6-time-doc, libghc6-help-dev, libghc6-help-prof, haskell-help-doc
-Build-Depends-Indep: ghc6-doc, haddock, hugs (>= 98.200503.08), libghc6-mtl-doc, haskell-extra-doc, haskell-unixutils-doc, libghc6-xhtml-doc, haskell-debian-doc, haskell-debian-mirror-doc
+Build-Depends: debhelper (>= 5.0.0), cdbs, haskell-devscripts-cdbs, cabal-debian, ghc6 (>=6.8), ghc6-prof, libghc6-mtl-prof, libghc6-extra-prof (>= 1.11), libghc6-unixutils-prof, libghc6-xhtml-prof, libghc6-hunit-prof, libghc6-debian-dev (>= 2.19), libghc6-debian-doc, libghc6-debian-mirror-dev, libghc6-debian-mirror-doc, libghc6-regex-posix-prof, libghc6-regex-posix-doc, libghc6-hunit-doc, libghc6-network-prof, libghc6-network-doc, libghc6-time-prof, libghc6-time-doc, libghc6-help-dev, libghc6-help-prof, libghc6-help-doc
+Build-Depends-Indep: ghc6-doc, haddock, hugs (>= 98.200503.08), libghc6-mtl-doc, libghc6-extra-doc, libghc6-unixutils-doc, libghc6-xhtml-doc, libghc6-debian-doc, libghc6-debian-mirror-doc
 Standards-Version: 3.7.2.2
 
 Package: libghc6-archive-dev
@@ -20,10 +20,10 @@ Depends: ${haskell:Depends}
 Description: A library for creating hardlinked mirrors/backups
  This package contains the libraries compiled for Hugs.
 
-Package: haskell-archive-doc
+Package: libghc6-archive-doc
 Section: doc
-Architecture: all
-Depends: ghc6-doc, libghc6-mtl-doc, haskell-extra-doc, haskell-unixutils-doc, libghc6-xhtml-doc, haskell-debian-doc, haskell-debian-mirror-doc, haskell-help-doc
+Architecture: any
+Depends: ghc6-doc, libghc6-mtl-doc, libghc6-extra-doc, libghc6-unixutils-doc, libghc6-xhtml-doc, libghc6-debian-doc, libghc6-debian-mirror-doc, libghc6-help-doc
 Description: A library for creating hardlinked mirrors/backups
  This package contains the documentation.
 
