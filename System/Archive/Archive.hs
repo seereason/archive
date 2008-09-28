@@ -14,16 +14,17 @@ import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
 import Network.URI
-import System.Unix.FilePath
 import System.Unix.Files
 import System.Archive.AptMethods
 import System.Directory
+import System.FilePath
 import System.IO
 import System.IO.Error
 import System.Locale
 import System.Posix.Files
 import System.Process
 import System.Exit
+import System.Unix.FilePath (realpath)
 import Test.HUnit.Base
 import Text.Regex.Posix
 
@@ -230,9 +231,9 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
     do ct <- getZonedTime
        if mPrev == (Just (mkName config ct))
         then error "update in place" -- updateInPlace (mkName ct)
-        else do let inProgressFP = snapshotDir +/+ (mkInProgress config ct)
-                    completedFP  = snapshotDir +/+ (mkName config ct)
-                (ec, mChanges) <- doUpdate options (map (snapshotDir +/+) inprogress) (map (snapshotDir +/+) (maybeToList mPrev)) src inProgressFP dists
+        else do let inProgressFP = snapshotDir </> (mkInProgress config ct)
+                    completedFP  = snapshotDir </> (mkName config ct)
+                (ec, mChanges) <- doUpdate options (map (snapshotDir </>) inprogress) (map (snapshotDir </>) (maybeToList mPrev)) src inProgressFP dists
                 case ec of
                   (ExitFailure n) ->
                       do hPutStrLn stderr ("sub-process failed with exit code " ++ show n)
@@ -240,10 +241,10 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
                   ExitSuccess ->
                       do renameDirectory inProgressFP completedFP `catch`
                            (\e -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
-                         unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP (snapshotDir +/+ "current"))
-                         let linkPath = snapshotDir +/+ (linkName config)
+                         unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP (snapshotDir </> "current"))
+                         let linkPath = snapshotDir </> (linkName config)
                          linkExists <- fileExist linkPath
-                         unless linkExists $ forceSymbolicLink (snapshotDir +/+ "current") linkPath
+                         unless linkExists $ forceSymbolicLink (snapshotDir </> "current") linkPath
                          return mChanges
     where
       doUpdate options partial prevBasePaths src basePath dists =
@@ -311,7 +312,7 @@ getSnapshotDirectories nameP dir =
                                                                              (\e -> if isDoesNotExistError e
                                                                                      then return []
                                                                                      else ioError e))
-       filterM (liftM isRealDirectory . getFileStatus . (dir +/+))  c
+       filterM (liftM isRealDirectory . getFileStatus . (dir </>))  c
     where
       isRealDirectory :: FileStatus -> Bool
       isRealDirectory fs = all ($ fs) [isDirectory, not . isSymbolicLink ]

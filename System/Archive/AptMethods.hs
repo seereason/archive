@@ -11,10 +11,11 @@ import Debian.Apt.Methods
 import Debian.Apt.Index hiding (update)
 import Debian.Control.ByteString
 import Debian.Mirror
-import System.Unix.FilePath
+import System.FilePath
 import System.Directory
 import System.Exit
 import System.Posix.Files
+import System.Unix.FilePath (dirName)
 import Network.URI
 
 test =
@@ -113,29 +114,29 @@ updateViaAptMethods prevBasePaths remoteURI basePath dists =
     where
       prevBasePath = listToMaybe prevBasePaths
       fetchControlFiles (dist, arches) =
-          do let distPath = "dists" +/+ dist
-                 releaseFP = distPath +/+ "Release"
-             ensureParentDirectoryExists (basePath +/+ releaseFP)
-             fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ releaseFP }) (basePath +/+ releaseFP) (fmap (+/+ releaseFP) prevBasePath)
-             release <- mustParseControlFromFile (basePath +/+ releaseFP)
+          do let distPath = "dists" </> dist
+                 releaseFP = distPath </> "Release"
+             ensureParentDirectoryExists (basePath </> releaseFP)
+             fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) </> releaseFP }) (basePath </> releaseFP) (fmap (</> releaseFP) prevBasePath)
+             release <- mustParseControlFromFile (basePath </> releaseFP)
              let indexFiles = indexesInRelease (archFilter arches) release
-                 fetch = (\fp -> ensureParentDirectoryExists (basePath +/+ distPath +/+ fp) >>
-                                 (fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ distPath +/+ fp })
-                                                  (basePath +/+ distPath +/+ fp)
-                                                  (fmap (+/+ (distPath +/+ fp)) prevBasePath)))
+                 fetch = (\fp -> ensureParentDirectoryExists (basePath </> distPath </> fp) >>
+                                 (fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) </> distPath </> fp })
+                                                  (basePath </> distPath </> fp)
+                                                  (fmap (</> (distPath </> fp)) prevBasePath)))
              -- download index files found in Release
              mapM_ (\ (_,_,fp) -> fetch fp) indexFiles
              -- download other files not found in Release
              mapM_ fetch (["Release.gpg"] ++ map (\arch -> "Contents-" ++ arch ++ ".gz") arches)
       fetchPoolFile :: [FilePath] -> FilePath -> FileTuple -> IO (Maybe FileTuple)
       fetchPoolFile prevBasePaths basePath ft@(checksum, size, filename) =
-          do doneAlready <- fileExist (basePath +/+ filename) -- TODO: check size/md5sum
+          do doneAlready <- fileExist (basePath </> filename) -- TODO: check size/md5sum
              if doneAlready
                 then do putStrLn $ filename ++ " already exists in pool."
                         return Nothing
                 else do
-                  ensureParentDirectoryExists (basePath +/+ filename) -- silly, but this gets us a log message, so..
-                  res <- fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ filename }) (basePath +/+ filename) (fmap (+/+ filename) prevBasePath)
+                  ensureParentDirectoryExists (basePath </> filename) -- silly, but this gets us a log message, so..
+                  res <- fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) </> filename }) (basePath </> filename) (fmap (</> filename) prevBasePath)
                   if res
                      then return Nothing
                      else return (Just ft)
@@ -152,8 +153,8 @@ updateViaAptMethods prevBasePaths remoteURI basePath dists =
                (Left e) -> error (show e)
                (Right c) -> return c
       createPoolFileList basePath (dist, arches) =
-          do let distDir = (basePath +/+ "dists" +/+ dist)
-             release <- mustParseControlFromFile (distDir +/+ "Release")
+          do let distDir = (basePath </> "dists" </> dist)
+             release <- mustParseControlFromFile (distDir </> "Release")
              let indexFiles = indexesInRelease (archFilter arches) release
              binaryIndexes <- findIndexes distDir "Packages" indexFiles
              binaryFiles   <- liftM concat $ mapM (makePackageFileListIO distDir) binaryIndexes
@@ -163,18 +164,18 @@ updateViaAptMethods prevBasePaths remoteURI basePath dists =
       nubOn :: (Ord b) => (a -> b) -> [a] -> [a]
       nubOn selector list = map head $ groupBy ((==) `on` selector) $ sortBy (compare `on` selector) list
 {-
-    let releaseFPs = map ((\dist -> "dists" +/+ dist +/+ "Release") . fst) dists -- hrm, we need to do this on a dist by dist basis
+    let releaseFPs = map ((\dist -> "dists" </> dist </> "Release") . fst) dists -- hrm, we need to do this on a dist by dist basis
         prevBasePath = listToMaybe prevBasePaths
     in do -- create dist directories
-          mapM_ ((\dir -> putStrLn ("Ensuring " ++ dir ++ " exists.") >> createDirectoryIfMissing True dir) . (basePath +/+) . dirName) releaseFPs
+          mapM_ ((\dir -> putStrLn ("Ensuring " ++ dir ++ " exists.") >> createDirectoryIfMissing True dir) . (basePath </>) . dirName) releaseFPs
           -- fetch Release files
-          mapM_ (\fp -> fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ fp }) (basePath +/+ fp) (fmap (+/+ fp) prevBasePath) >>= 
+          mapM_ (\fp -> fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) </> fp }) (basePath </> fp) (fmap (</> fp) prevBasePath) >>= 
                  (flip unless) (error $ "Failed to fetch: " ++ fp)) releaseFPs
           -- read the release files and get a list of the other indexes
-          releases <- mapM mustParseControlFromFile (map (basePath +/+) releaseFPs)
+          releases <- mapM mustParseControlFromFile (map (basePath </>) releaseFPs)
           let indexFiles = concatMap (indexesInRelease (const True)) releases
           -- add checks for size/checksums
-          mapM_ (\fp -> fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) +/+ "dists" +/+ fp }) (basePath +/+ "dists" +/+ fp) (fmap (+/+ ("dists" +/+ fp)) prevBasePath)) (map (\ (_,_,fp) -> fp) indexFiles)
+          mapM_ (\fp -> fetchOrLink [] (remoteURI { uriPath = (uriPath remoteURI) </> "dists" </> fp }) (basePath </> "dists" </> fp) (fmap (</> ("dists" </> fp)) prevBasePath)) (map (\ (_,_,fp) -> fp) indexFiles)
           -- (distFiles, _) <- liftM (\l -> (concatMap fst l, concatMap snd l)) $ mapM (\ (dist, arches) -> makeDistFileList (archFilter arches) basePath dist) dists
           -- return ()
           -- get all the indexes
