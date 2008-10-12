@@ -11,9 +11,9 @@ Build-Type:      Simple
 Library
   Build-Depends:   base, regex-compat, regex-posix, HUnit, process, unix, old-locale, directory, Unixutils, network, time, bytestring, mtl, xhtml, Extra, pretty, debian >= 2.19, debian-mirror >= 1.1.3, help, filepath
   Exposed-Modules: System.Archive.Archive, System.Archive.Target, System.Archive.UpdateMirror, System.Archive.AptMethods
-  ghc-options:	-O2 -fasm -W
+  ghc-options:	-O2 -fasm -W -threaded
 
 Executable archive
   Main-Is:         util/ArchiveMain.hs
   -- Hs-Source-Dirs:  util
-  ghc-options:	-O2 -fasm -W
+  ghc-options:	-O2 -fasm -W -threaded
