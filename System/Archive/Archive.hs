@@ -26,7 +26,8 @@ import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
 import Test.HUnit.Base
-import Text.Regex.Posix
+import Text.Regex (mkRegex, matchRegex)
+import Text.Regex.Posix ((=~))
 
 
 
@@ -248,12 +249,30 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
                          return mChanges
     where
       doUpdate options partial prevBasePaths src basePath dists =
-          do let remoteURI = maybe (error $ "Not a valid uri: " ++ src) id (parseURI src)
+          do let remoteURI = maybe (error $ "Not a valid uri: " ++ src) id (parseRsync src)
              case uriScheme remoteURI of
                "rsync:" -> rsync options (partial ++ prevBasePaths) src basePath
+               "ssh:" -> rsync options (partial ++ prevBasePaths) src basePath
                _ -> do ec <- updateViaAptMethods prevBasePaths remoteURI basePath dists
                        return (ec, Nothing)
 
+-- In addition to valid URIs, rsync also accepts user@host:<path>.
+parseRsync :: FilePath -> Maybe URI
+parseRsync src = 
+    maybe parseSSH Just (parseURI src)
+    where
+      parseSSH =
+          case matchRegex (mkRegex "^([^@]+)@([^:]+):(.*)$") src of
+            Just [user, host, path] ->
+                case parseRelativeReference path of
+                  Just uri ->
+                      Just (uri { uriScheme = "ssh:"
+                                , uriAuthority = Just (URIAuth { uriUserInfo = user ++ "@"
+                                                               , uriRegName = host
+                                                               , uriPort = "" })})
+                  _ -> Nothing
+            _ -> Nothing
+          
 rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Maybe UpdateResult)
 rsync options linkDests src dest =
     do absLinkDests <- mapM realpath linkDests
