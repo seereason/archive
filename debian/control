@@ -4,6 +4,7 @@ Section: devel
 Maintainer: David Fox <dsf@seereason.com>
 Build-Depends: debhelper (>= 5.0.0),
 	       cdbs,
+               haskell-devscripts,
 	       cabal-debian,
 	       ghc6 (>=6.8),
 	       ghc6-prof,
