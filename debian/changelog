@@ -1,3 +1,10 @@
+haskell-archive (1.2.8) unstable; urgency=low
+
+  * Ensure the existance of the destination directory before running the
+    update.
+
+ -- David Fox <dsf@seereason.com>  Mon, 03 Jan 2011 13:24:39 -0800
+
 haskell-archive (1.2.7) unstable; urgency=low
 
   * Accept a source argument in the form user@host:<path>, which is not

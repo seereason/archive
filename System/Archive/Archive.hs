@@ -275,7 +275,8 @@ parseRsync src =
           
 rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Maybe UpdateResult)
 rsync options linkDests src dest =
-    do absLinkDests <- mapM realpath linkDests
+    do createDirectoryIfMissing True dest
+       absLinkDests <- mapM realpath linkDests
        let cmd = "rsync"
            args =
             ((map ("--link-dest=" ++) absLinkDests) ++
