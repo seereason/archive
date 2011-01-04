@@ -1,3 +1,9 @@
+haskell-archive (1.2.9) unstable; urgency=low
+
+  * Add the Archive.Prune module, to limit the number of backups.
+
+ -- David Fox <dsf@seereason.com>  Mon, 03 Jan 2011 22:42:30 -0800
+
 haskell-archive (1.2.8) unstable; urgency=low
 
   * Ensure the existance of the destination directory before running the
