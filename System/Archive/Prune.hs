@@ -13,7 +13,7 @@ import Data.Time (UTCTime, ZonedTime, NominalDiffTime, parseTime, formatTime, ut
 import System.Directory (getDirectoryContents)
 import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath ((</>))
-import System.IO (hPutStrLn, stderr)
+import System.IO (hPutStr, stderr)
 import System.Locale (defaultTimeLocale)
 import System.Unix.Process (lazyProcess, exitCodeOnly)
 
@@ -62,7 +62,8 @@ timeFromPath dateFormat prefix path =
 -- |Remove a directory and its contents.
 rmrf :: FilePath -> IO ()
 rmrf path =
+    hPutStr stderr ("Removing backup " ++ path ++ "...") >>
     lazyProcess "rm" ["-rf", path] Nothing Nothing L.empty >>= return . exitCodeOnly >>= \ code ->
     case code of
-      ExitSuccess -> return ()
+      ExitSuccess -> hPutStr stderr "done.\n" >> return ()
       code -> error $ "rm -rf " ++ path ++ " -> " ++ show code
