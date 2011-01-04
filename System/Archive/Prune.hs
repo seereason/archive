@@ -18,22 +18,22 @@ import System.Locale (defaultTimeLocale)
 import System.Unix.Process (lazyProcess, exitCodeOnly)
 
 -- |Remove backups until we have a certain number left.
-prune :: FilePath -> String -> Int -> IO ()
-prune baseDirName prefix keep =
+prune :: String -> FilePath -> String -> Int -> IO ()
+prune dateFormat baseDirName prefix keep =
     do paths <- getDirectoryContents baseDirName
-       let times = sortBy (flip compare) . mapMaybe (timeFromPath prefix) $ paths
+       let times = sortBy (flip compare) . mapMaybe (timeFromPath dateFormat prefix) $ paths
        when -- Always keep two: the oldest and the newest
             (length times > max 2 keep)
-            (nextVictim baseDirName prefix >>= \ victim ->
+            (nextVictim dateFormat baseDirName prefix >>= \ victim ->
              maybe (return ()) rmrf victim >>
-             prune baseDirName prefix keep)
+             prune dateFormat baseDirName prefix keep)
 
 -- |Decide which archives is the least important
-nextVictim :: FilePath -> String -> IO (Maybe FilePath)
-nextVictim baseDirName prefix =
+nextVictim :: String -> FilePath -> String -> IO (Maybe FilePath)
+nextVictim dateFormat baseDirName prefix =
     do paths <- getDirectoryContents baseDirName
        -- Compute the backup times and sort newest first.
-       let times = sortBy (flip compare) . mapMaybe (timeFromPath prefix) $ paths
+       let times = sortBy (flip compare) . mapMaybe (timeFromPath dateFormat prefix) $ paths
        case times of
          [] -> return Nothing
          (newest : older) -> do
@@ -53,10 +53,10 @@ nextVictim baseDirName prefix =
              return $ Just path
 
 -- |Parse the date string in a backup directory name.
-timeFromPath :: FilePath -> FilePath -> Maybe UTCTime
-timeFromPath prefix path =
+timeFromPath :: String -> FilePath -> FilePath -> Maybe UTCTime
+timeFromPath dateFormat prefix path =
     stripPrefix prefix path >>=
-    parseTime defaultTimeLocale "%F_%T" >>=
+    parseTime defaultTimeLocale dateFormat >>=
     return . zonedTimeToUTC
 
 -- |Remove a directory and its contents.
