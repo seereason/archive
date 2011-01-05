@@ -9,6 +9,7 @@ module System.Archive.Archive
 
 import Control.Concurrent
 import Control.Monad
+import Data.ByteString.Lazy.Char8 (empty)
 import Data.List
 import Data.Maybe
 import Data.Time
@@ -25,6 +26,8 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
+import System.Unix.Process (collectOutputUnpacked)
+import System.Unix.Progress (lazyProcessV)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
@@ -293,12 +296,7 @@ rsync options linkDests src dest =
             )
        hPutStrLn stderr ("> " ++ unwords (cmd : args))
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
-       (hin, hout, herr, ph) <- runInteractiveProcess cmd args Nothing Nothing
-       hClose hin
-       out <- hGetContents hout
-       forkIO $ hPutStrLn stdout out
-       forkIO $ hGetContents herr >>= hPutStrLn stderr
-       ec <- waitForProcess ph
+       (out, _, ec) <- lazyProcessV cmd args Nothing Nothing empty >>= return . collectOutputUnpacked
        case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
            (_,_,_,[s]) -> return (ec, Just (if s == "0" then NoChanges else Changes ))
            _ -> return (ec, Nothing)

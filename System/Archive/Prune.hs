@@ -9,7 +9,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Function (on)
 import Data.List (sortBy, stripPrefix)
 import Data.Maybe (mapMaybe)
-import Data.Time (UTCTime, ZonedTime, NominalDiffTime, parseTime, formatTime, utcToZonedTime, diffUTCTime, zonedTimeToUTC, getCurrentTimeZone, getTimeZone)
+import Data.Time (UTCTime, NominalDiffTime, parseTime, formatTime, diffUTCTime, zonedTimeToUTC)
 import System.Directory (getDirectoryContents)
 import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath ((</>))
@@ -37,8 +37,7 @@ nextVictim dateFormat baseDirName prefix =
        case times of
          [] -> return Nothing
          (newest : older) -> do
-             let older' = init older
-                 ages = map (diffUTCTime newest) older
+             let ages = map (diffUTCTime newest) older
                  -- For each backup, compute the interval from the
                  -- backup before to the backup after.
                  intervals = map (uncurry diffUTCTime) (zip (newest : older) (tail older))
