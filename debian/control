@@ -5,52 +5,52 @@ Maintainer: David Fox <dsf@seereason.com>
 Build-Depends: debhelper (>= 5.0.0),
 	       cdbs,
                haskell-devscripts,
-	       ghc6 (>=6.8),
-	       ghc6-prof,
-	       ghc6-doc,
+	       ghc (>=6.8),
+	       ghc-prof,
+	       ghc-doc,
 	       haddock,
-	       libghc6-extra-prof (>= 1.11),
-	       libghc6-unixutils-prof,
-               libghc6-hunit-prof,
-               libghc6-hunit-doc,
-               libghc6-mtl-prof,
-               libghc6-mtl-doc,
-               libghc6-network-prof,
-               libghc6-network-doc,
-               libghc6-regex-compat-prof,
+	       libghc-extra-prof (>= 1.11),
+	       libghc-unixutils-prof,
+               libghc-hunit-prof,
+               libghc-hunit-doc,
+               libghc-mtl-prof,
+               libghc-mtl-doc,
+               libghc-network-prof,
+               libghc-network-doc,
+               libghc-regex-compat-prof,
                haskell-regex-compat-doc,
-               libghc6-regex-posix-prof,
+               libghc-regex-posix-prof,
                haskell-regex-posix-doc,
-	       libghc6-debian-prof (>= 2.19),
-	       libghc6-debian-doc,
-	       libghc6-debian-mirror-prof,
-	       libghc6-debian-mirror-doc,
-	       libghc6-help-prof,
-	       libghc6-help-doc,
-	       libghc6-extra-doc,
-	       libghc6-unixutils-doc,
-	       libghc6-debian-doc,
-	       libghc6-debian-mirror-doc,
-	       libghc6-xhtml-prof,
-	       libghc6-xhtml-doc
+	       libghc-debian-prof (>= 2.19),
+	       libghc-debian-doc,
+	       libghc-debian-mirror-prof,
+	       libghc-debian-mirror-doc,
+	       libghc-help-prof,
+	       libghc-help-doc,
+	       libghc-extra-doc,
+	       libghc-unixutils-doc,
+	       libghc-debian-doc,
+	       libghc-debian-mirror-doc,
+	       libghc-xhtml-prof,
+	       libghc-xhtml-doc
 Build-Depends-Indep: hugs (>= 98.200503.08)
 Standards-Version: 3.7.2.2
 
-Package: libghc6-archive-dev
+Package: libghc-archive-dev
 Section: libdevel
 Architecture: any
 Depends: ${haskell:Depends}
 Description: A library for creating hardlinked mirrors/backups
  This package contains the libraries compiled for GHC 6.
 
-Package: libghc6-archive-prof
+Package: libghc-archive-prof
 Section: libdevel
 Architecture: any
-Depends: ${haskell:Depends}, libghc6-archive-dev
+Depends: ${haskell:Depends}, libghc-archive-dev
 Description: A library for creating hardlinked mirrors/backups
  This package contains the libraries compiled for GHC 6.
 
-Package: libghc6-archive-doc
+Package: libghc-archive-doc
 Section: doc
 Architecture: any
 Depends: ${haskell:Depends}
