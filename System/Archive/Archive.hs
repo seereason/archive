@@ -28,6 +28,7 @@ import System.Exit
 import System.Unix.FilePath (realpath)
 import System.Unix.Process (collectOutputUnpacked)
 import System.Unix.Progress (lazyProcessV)
+import System.Unix.QIO (qPutStrLn)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
@@ -129,8 +130,8 @@ data Option
     = {- DryRun		-- ^Print the commands to execute, done run them
     | Unlink		-- ^Unimplemented
     | Current		-- ^Unimplemented
-    | Prune String	-- ^Unimplemented 
-    | -}  Rsync String	-- ^Pass one or more additional arguments to the rsync sub-process
+    | Prune String	-- ^Unimplemented
+    | -} Rsync String	-- ^Pass one or more additional arguments to the rsync sub-process
     | NoUpdateSymlink
     deriving (Eq, Show)
 
@@ -283,7 +284,7 @@ rsync options linkDests src dest =
        let cmd = "rsync"
            args =
             ((map ("--link-dest=" ++) absLinkDests) ++
-             (mapMaybe rsyncOption options) ++
+             (mapMaybe rsyncOption (dropTwoVs options)) ++
              ["-a" -- implies: lptgoD
              , "-HxS"
              , "--partial"
@@ -304,6 +305,10 @@ rsync options linkDests src dest =
     where
       rsyncOption (Rsync x) = Just x
       rsyncOption _ = Nothing
+      -- The first two -v arguments cause lazyProcessV to reveal more
+      -- of the full output of rsync, additional -v arguments are
+      -- passed on to rsync.
+      dropTwoVs options = let (vs, others) = partition (== (Rsync "-v")) options in drop 2 vs ++ others 
 
 -- return the latest *complete* archive, latest *inprogress* archives which are
 -- newer than the latest *complete*, and a list of any other

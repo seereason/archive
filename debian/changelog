@@ -1,3 +1,10 @@
+haskell-archive (1.2.11) unstable; urgency=low
+
+  * Use the System.Unix.QIO.quieter function to control the output
+    from lazyProcessV when rsync is run.
+
+ -- David Fox <dsf@seereason.com>  Thu, 17 Nov 2011 07:22:46 -0800
+
 haskell-archive (1.2.10) unstable; urgency=low
 
   * Use lazyCommandV to run rsync to get clearer output.
