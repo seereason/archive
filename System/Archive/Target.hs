@@ -2,7 +2,7 @@ module System.Archive.Target where
 
 import System.Archive.Archive
 import Control.Monad
-import Data.Monoid
+import Data.Monoid (Monoid(..))
 import Data.List
 import qualified Text.PrettyPrint.HughesPJ as D
 import System.IO.Error
