@@ -26,7 +26,7 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Unix.Process (collectOutputUnpacked)
+import System.Unix.LazyProcess (collectOutputUnpacked)
 import System.Unix.Progress (lazyProcessV)
 import System.Unix.QIO (qPutStrLn)
 import Test.HUnit.Base
