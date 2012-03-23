@@ -5,7 +5,6 @@ module System.Archive.Prune
     ) where
 
 import Control.Monad (when)
-import qualified Data.ByteString.Lazy.Char8 as L
 import Data.Function (on)
 import Data.List (sortBy, stripPrefix)
 import Data.Maybe (mapMaybe)
@@ -15,7 +14,7 @@ import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath ((</>))
 import System.IO (hPutStr, stderr)
 import System.Locale (defaultTimeLocale)
-import System.Unix.Process (lazyProcess, exitCodeOnly)
+import System.Process (readProcessWithExitCode, showCommandForUser)
 
 -- |Remove backups until we have a certain number left.
 prune :: String -> FilePath -> String -> Int -> IO ()
@@ -60,9 +59,11 @@ timeFromPath dateFormat prefix path =
 
 -- |Remove a directory and its contents.
 rmrf :: FilePath -> IO ()
-rmrf path =
-    hPutStr stderr ("Removing backup " ++ path ++ "...") >>
-    lazyProcess "rm" ["-rf", path] Nothing Nothing L.empty >>= return . exitCodeOnly >>= \ code ->
-    case code of
-      ExitSuccess -> hPutStr stderr "done.\n" >> return ()
-      code -> error $ "rm -rf " ++ path ++ " -> " ++ show code
+rmrf path = do
+  let cmd = "rm"
+      args = ["-rf", path]
+  hPutStr stderr ("Removing backup " ++ path ++ "...")
+  (code, _, _) <- readProcessWithExitCode cmd args ""
+  case code of
+    ExitSuccess -> hPutStr stderr "done.\n"
+    code -> error $ showCommandForUser cmd args ++ " -> " ++ show code
