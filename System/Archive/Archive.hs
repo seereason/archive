@@ -26,9 +26,8 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Unix.Outputs (collectOutputUnpacked)
-import System.Unix.Progress (lazyProcessV)
-import System.Unix.QIO (qPutStrLn)
+import System.Unix.Progress.Outputs (collectOutputUnpacked)
+import System.Unix.Progress.QIO (lazyProcessV)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
