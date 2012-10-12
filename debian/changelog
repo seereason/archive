@@ -1,3 +1,10 @@
+haskell-archive (1.3.1) unstable; urgency=low
+
+  * Add a System.Archive.Site module containing the script we use to pull
+    backups from a remote web site.
+
+ -- David Fox <dsf@seereason.com>  Fri, 12 Oct 2012 16:10:59 -0700
+
 haskell-archive (1.3) unstable; urgency=low
 
   * Capture rsync failure messages
