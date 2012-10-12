@@ -302,7 +302,7 @@ rsync options linkDests src dest =
             )
        hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
-       result <- lazyProcessV cmd args Nothing Nothing empty >>= return . collectOutputUnpacked
+       result <- lazyProcessV cmd args Nothing Nothing empty
        let (out, err, ec) = collectOutputUnpacked result
            all = fst (collectMergedUnpacked result)
        case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
