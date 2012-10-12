@@ -31,7 +31,7 @@ import System.Process hiding (readProcessWithExitCode)
 import System.Process.ByteString.Lazy (readProcessWithExitCode)
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Unix.Progress.Outputs (collectOutputUnpacked)
+import System.Unix.Progress.Outputs (collectOutputUnpacked, collectMergedUnpacked)
 import System.Unix.Progress.QIO (lazyProcessV)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
