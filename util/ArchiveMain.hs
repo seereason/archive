@@ -14,9 +14,9 @@
 module Main where
 
 import Control.Monad
-import Data.List
+--import Data.List
 import System.IO
-import Data.Maybe
+--import Data.Maybe
 import System.Environment
 import System.Exit
 import System.Archive.Archive

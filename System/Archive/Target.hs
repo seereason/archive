@@ -1,11 +1,13 @@
 module System.Archive.Target where
 
-import System.Archive.Archive
+import Control.Applicative.Error (Failing(Success, Failure))
+import Control.Exception (try)
 import Control.Monad
 import Data.Monoid (Monoid(..))
 import Data.List
 import qualified Text.PrettyPrint.HughesPJ as D
-import System.IO.Error
+import System.Archive.Archive
+-- import System.IO.Error hiding (try)
 import System.Unix.QIO (quieter)
 -- import Text.PrettyPrint.HughesPJ
 
@@ -65,13 +67,13 @@ showTarget (AptTarget prettyName srcs dest _ options dists) =
 
 -- * Archive Target
 
-archiveTargets :: [Option] -> [Target] -> IO [(Target, Either IOError (Maybe UpdateResult))]
+archiveTargets :: [Option] -> [Target] -> IO [(Target, Either IOError (Failing UpdateResult))]
 archiveTargets options targets =
     quieter (\ n -> n + 2 - length (filter (== (Rsync "-v")) options)) $
             liftM (zip targets) $ mapM (archiveTarget options) targets
 
 -- TODO: create repository -> current symlink
-archiveTarget :: [Option] -> Target -> IO (Either IOError (Maybe UpdateResult))
+archiveTarget :: [Option] -> Target -> IO (Either IOError (Failing UpdateResult))
 archiveTarget _ target | null (src target) =
     return $ Left (userError $ "target " ++ (prettyName target) ++ " does not include any sources")
 archiveTarget extraOptions (RsyncTarget _prettyName (src:_) dest config options) =
@@ -79,14 +81,15 @@ archiveTarget extraOptions (RsyncTarget _prettyName (src:_) dest config options)
 archiveTarget extraOptions (AptTarget   _prettyName (src:_) dest config options dists) =
     try (archive config (options ++ extraOptions) src dest dists)
 
-ppResults :: [(Target, Either IOError (Maybe UpdateResult))] -> D.Doc
+ppResults :: [(Target, Either IOError (Failing UpdateResult))] -> D.Doc
 ppResults = D.vcat . map ppResult
 
-ppResult :: (Target, Either IOError (Maybe UpdateResult)) -> D.Doc
+ppResult :: (Target, Either IOError (Failing UpdateResult)) -> D.Doc
 ppResult (t, (Left e)) = D.text (prettyName t) D.<> D.colon D.<+> D.text (show e)
-ppResult (t, Right Nothing) = D.text (prettyName t) D.<+> D.text "ok."
-ppResult (t, Right (Just Changes)) = D.text (prettyName t) D.<+> D.text "ok. (updated)"
-ppResult (t, Right (Just NoChanges)) = D.text (prettyName t) D.<+> D.text "ok. (no changes)"
+ppResult (t, Right (Failure msgs)) = D.text (prettyName t) D.<+> D.text (unlines msgs)
+ppResult (t, Right (Success Unknown)) = D.text (prettyName t) D.<+> D.text "ok."
+ppResult (t, Right (Success Changes)) = D.text (prettyName t) D.<+> D.text "ok. (updated)"
+ppResult (t, Right (Success NoChanges)) = D.text (prettyName t) D.<+> D.text "ok. (no changes)"
 
 
 -- *  Old

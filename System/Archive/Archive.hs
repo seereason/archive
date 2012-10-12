@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module System.Archive.Archive 
     ( Option(..)
     , UpdateResult(..)
@@ -7,23 +8,27 @@ module System.Archive.Archive
     , genericConfig
     ) where
 
-import Control.Concurrent
+import Control.Applicative.Error (Failing(..))
+--import Control.Concurrent
+import Control.Exception (SomeException, catch)
 import Control.Monad
-import Data.ByteString.Lazy.Char8 (empty)
+import Data.ByteString.Lazy.Char8 (empty, unpack)
 import Data.List
 import Data.Maybe
 import Data.Time
 import Data.Time.Clock.POSIX
 import Network.URI
+import Prelude hiding (catch)
 import System.Unix.Files
 import System.Archive.AptMethods
 import System.Directory
 import System.FilePath
 import System.IO
-import System.IO.Error
+import System.IO.Error hiding (catch)
 import System.Locale
 import System.Posix.Files
-import System.Process
+import System.Process hiding (readProcessWithExitCode)
+import System.Process.ByteString.Lazy (readProcessWithExitCode)
 import System.Exit
 import System.Unix.FilePath (realpath)
 import System.Unix.Progress.Outputs (collectOutputUnpacked)
@@ -138,6 +143,7 @@ data Option
 data UpdateResult 
     = NoChanges -- ^ rsync did not detect any changes
     | Changes   -- ^ rsync found some changes
+    | Unknown   -- ^ Update done via apt methods
       deriving (Show, Read, Eq)
 
 -- |configuration for directory naming
@@ -224,13 +230,13 @@ configLaws config =
                                (not (isComplete config ip) && not (isInProgress config cp)))
            ]
 
-archive :: Config -> [Option] -> FilePath -> FilePath -> [(String, [String])] -> IO (Maybe UpdateResult)
+archive :: Config -> [Option] -> FilePath -> FilePath -> [(String, [String])] -> IO (Failing UpdateResult)
 archive config options src backupdir dists = 
     do dirs <- getSnapshotDirectories (const True) backupdir
        let report = latest config dirs
        update config options src backupdir report dists
 
-update :: Config -> [Option] -> FilePath -> FilePath -> Report -> [(String, [String])] -> IO (Maybe UpdateResult)
+update :: Config -> [Option] -> FilePath -> FilePath -> Report -> [(String, [String])] -> IO (Failing UpdateResult)
 update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
     do ct <- getZonedTime
        if mPrev == (Just (mkName config ct))
@@ -244,7 +250,7 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
                          exitWith (ExitFailure n)
                   ExitSuccess ->
                       do renameDirectory inProgressFP completedFP `catch`
-                           (\e -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
+                           (\ (e :: SomeException) -> error $ "update: failed to rename: " ++ inProgressFP ++ " to " ++ completedFP ++ "\n" ++ show e)
                          unless (NoUpdateSymlink `elem` options) (forceSymbolicLink completedFP (snapshotDir </> "current"))
                          let linkPath = snapshotDir </> (linkName config)
                          linkExists <- fileExist linkPath
@@ -257,7 +263,7 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
                "rsync:" -> rsync options (partial ++ prevBasePaths) src basePath
                "ssh:" -> rsync options (partial ++ prevBasePaths) src basePath
                _ -> do ec <- updateViaAptMethods prevBasePaths remoteURI basePath dists
-                       return (ec, Nothing)
+                       return (ec, Success Unknown)
 
 -- In addition to valid URIs, rsync also accepts user@host:<path>.
 parseRsync :: FilePath -> Maybe URI
@@ -276,7 +282,7 @@ parseRsync src =
                   _ -> Nothing
             _ -> Nothing
           
-rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Maybe UpdateResult)
+rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Failing UpdateResult)
 rsync options linkDests src dest =
     do createDirectoryIfMissing True dest
        absLinkDests <- mapM realpath linkDests
@@ -294,12 +300,14 @@ rsync options linkDests src dest =
              , dest
              ]
             )
-       hPutStrLn stderr ("> " ++ unwords (cmd : args))
+       hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
-       (out, _, ec) <- lazyProcessV cmd args Nothing Nothing empty >>= return . collectOutputUnpacked
+       result <- lazyProcessV cmd args Nothing Nothing empty >>= return . collectOutputUnpacked
+       let (out, err, ec) = collectOutputUnpacked result
+           all = fst (collectMergedUnpacked result)
        case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
-           (_,_,_,[s]) -> return (ec, Just (if s == "0" then NoChanges else Changes ))
-           _ -> return (ec, Nothing)
+           (_,_,_,[s]) -> return (ec, Success (if s == "0" then NoChanges else Changes ))
+           _ -> return (ec, Failure [all])
 
     where
       rsyncOption (Rsync x) = Just x
