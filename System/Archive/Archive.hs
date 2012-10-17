@@ -27,8 +27,7 @@ import System.IO
 import System.IO.Error hiding (catch)
 import System.Locale
 import System.Posix.Files
-import System.Process hiding (readProcessWithExitCode)
-import System.Process.ByteString.Lazy (readProcessWithExitCode)
+import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
 import System.Unix.Progress.Outputs (collectOutputUnpacked, collectMergedUnpacked)

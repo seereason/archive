@@ -1,5 +1,5 @@
 Name:            archive
-Version:         1.3.1
+Version:         1.3.2
 Cabal-Version:   >= 1.2
 Category:        System
 Synopsis:        A library and programs for creating hardlinked incremental archives or backups
@@ -12,7 +12,7 @@ Stability:       alpha
 Build-Type:      Simple
 
 Library
-  Build-Depends:   base >= 3 && <5, regex-compat, regex-posix, HUnit, process, unix, old-locale, directory, Unixutils, network, time, bytestring, mtl, xhtml, pretty, debian >= 2.19, debian-mirror >= 1.1.3, help, filepath, progress >= 1.52, Extra, applicative-extras, process-extras
+  Build-Depends:   base >= 3 && <5, regex-compat, regex-posix, HUnit, process, unix, old-locale, directory, Unixutils, network, time, bytestring, pretty, help, debian >= 2.19, debian-mirror >= 1.1.3, filepath, progress >= 1.52, Extra, applicative-extras
   Exposed-Modules: System.Archive.Archive, System.Archive.Prune, System.Archive.Site, System.Archive.Target, System.Archive.UpdateMirror, System.Archive.AptMethods
   ghc-options:	-O2 -W
 
