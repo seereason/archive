@@ -8,7 +8,7 @@ import Data.List
 import qualified Text.PrettyPrint.HughesPJ as D
 import System.Archive.Archive
 -- import System.IO.Error hiding (try)
-import System.Unix.QIO (quieter)
+-- import System.Unix.QIO (quieter)
 -- import Text.PrettyPrint.HughesPJ
 
 import Text.Help hiding (options)
@@ -69,8 +69,8 @@ showTarget (AptTarget prettyName srcs dest _ options dists) =
 
 archiveTargets :: [Option] -> [Target] -> IO [(Target, Either IOError (Failing UpdateResult))]
 archiveTargets options targets =
-    quieter (\ n -> n + 2 - length (filter (== (Rsync "-v")) options)) $
-            liftM (zip targets) $ mapM (archiveTarget options) targets
+    -- quieter (\ n -> n + 2 - length (filter (== (Rsync "-v")) options)) $
+    liftM (zip targets) $ mapM (archiveTarget options) targets
 
 -- TODO: create repository -> current symlink
 archiveTarget :: [Option] -> Target -> IO (Either IOError (Failing UpdateResult))

@@ -12,7 +12,9 @@ import Control.Applicative.Error (Failing(..))
 --import Control.Concurrent
 import Control.Exception (SomeException, catch)
 import Control.Monad
-import Data.ByteString.Lazy.Char8 (empty, unpack)
+import qualified Data.ByteString.Lazy as L
+import Data.ByteString.Lazy.Char8 (empty)
+import qualified Data.ByteString.Lazy.UTF8 as L
 import Data.List
 import Data.Maybe
 import Data.Time
@@ -30,8 +32,7 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Unix.Progress.Outputs (collectOutputUnpacked, collectMergedUnpacked)
-import System.Unix.Progress.QIO (lazyProcessV)
+import System.Process.Read (Output, readProcessChunks, {-prefixes,-} doOutput, keepOutput, keepStdout, keepStderr, keepResult)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
@@ -301,9 +302,13 @@ rsync options linkDests src dest =
             )
        hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
-       result <- lazyProcessV cmd args Nothing Nothing empty
-       let (out, err, ec) = collectOutputUnpacked result
-           all = fst (collectMergedUnpacked result)
+       (result :: [Output L.ByteString]) <- readProcessChunks id (RawCommand cmd args) empty >>= doOutput
+
+       let out = L.toString $ L.concat $ keepStdout result
+           -- err = L.toString $ L.concat $ keepStderr result
+           all = L.toString $ L.concat $ keepOutput result
+           (ec : _) = keepResult result
+
        case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
            (_,_,_,[s]) -> return (ec, Success (if s == "0" then NoChanges else Changes ))
            _ -> return (ec, Failure [all])
