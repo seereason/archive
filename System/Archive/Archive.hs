@@ -12,9 +12,6 @@ import Control.Applicative.Error (Failing(..))
 --import Control.Concurrent
 import Control.Exception (SomeException, catch)
 import Control.Monad
-import qualified Data.ByteString.Lazy as L
-import Data.ByteString.Lazy.Char8 (empty)
-import qualified Data.ByteString.Lazy.UTF8 as L
 import Data.List
 import Data.Maybe
 import Data.Time
@@ -32,7 +29,7 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Process.Read (Output, readProcessChunks, {-prefixes,-} doOutput, keepOutput, keepStdout, keepStderr, keepResult)
+import System.Process.Read (readProcessChunks, foldOutputsR)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
@@ -302,12 +299,13 @@ rsync options linkDests src dest =
             )
        hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
-       (result :: [Output L.ByteString]) <- readProcessChunks id (RawCommand cmd args) empty >>= doOutput
-
-       let out = L.toString $ L.concat $ keepStdout result
-           -- err = L.toString $ L.concat $ keepStderr result
-           all = L.toString $ L.concat $ keepOutput result
-           (ec : _) = keepResult result
+       (ec : _, out, all) <-
+           readProcessChunks id (RawCommand cmd args) "" >>=
+           return . foldOutputsR (\ (codes, outs, all) code -> (code : codes, outs, all))
+                                 (\ (codes, outs, all) out -> (codes, out ++ outs, out ++ all))
+                                 (\ (codes, outs, all) err -> (codes, outs, err ++ all))
+                                 (\ (codes, outs, all) _ -> (codes, outs, all))
+                                 ([], "", "")
 
        case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
            (_,_,_,[s]) -> return (ec, Success (if s == "0" then NoChanges else Changes ))
