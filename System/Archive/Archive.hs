@@ -300,7 +300,7 @@ rsync options linkDests src dest =
        hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
        (ec : _, out, all) <-
-           readProcessChunks id (RawCommand cmd args) "" >>=
+           readProcessChunks (proc cmd args) "" >>=
            return . foldOutputsR (\ (codes, outs, all) code -> (code : codes, outs, all))
                                  (\ (codes, outs, all) out -> (codes, out ++ outs, out ++ all))
                                  (\ (codes, outs, all) err -> (codes, outs, err ++ all))
