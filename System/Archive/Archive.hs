@@ -12,6 +12,9 @@ import Control.Applicative.Error (Failing(..))
 --import Control.Concurrent
 import Control.Exception (SomeException, catch)
 import Control.Monad
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.UTF8 as UTF8
 import Data.List
 import Data.Maybe
 import Data.Time
@@ -29,12 +32,12 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Process.Read (readProcessChunks, foldOutputsR)
+import System.Process.Read.Chunks (readProcessChunks, foldOutputsR)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
 
-
+decode = UTF8.toString . B.concat . L.toChunks
 
 {-
 
@@ -300,16 +303,16 @@ rsync options linkDests src dest =
        hPutStrLn stderr ("> " ++ showCommandForUser cmd args)
        hPutStrLn stderr ("  Updating from " ++ src ++ " ...")
        (ec : _, out, all) <-
-           readProcessChunks (proc cmd args) "" >>=
+           readProcessChunks (proc cmd args) L.empty >>=
            return . foldOutputsR (\ (codes, outs, all) code -> (code : codes, outs, all))
-                                 (\ (codes, outs, all) out -> (codes, out ++ outs, out ++ all))
-                                 (\ (codes, outs, all) err -> (codes, outs, err ++ all))
+                                 (\ (codes, outs, all) out -> (codes, L.append out outs, L.append out all))
+                                 (\ (codes, outs, all) err -> (codes, outs, L.append err all))
                                  (\ (codes, outs, all) _ -> (codes, outs, all))
-                                 ([], "", "")
+                                 ([], L.empty, L.empty)
 
-       case (out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
+       case (decode out =~ "Total transferred file size: ([0-9]*) bytes") :: (String, String, String, [String]) of
            (_,_,_,[s]) -> return (ec, Success (if s == "0" then NoChanges else Changes ))
-           _ -> return (ec, Failure [all])
+           _ -> return (ec, Failure [decode all])
 
     where
       rsyncOption (Rsync x) = Just x

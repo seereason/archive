@@ -28,6 +28,7 @@ Library
     pretty,
     process,
     process-extras,
+    process-progress,
     regex-compat,
     regex-posix,
     time,
