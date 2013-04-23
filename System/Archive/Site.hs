@@ -14,6 +14,7 @@ module System.Archive.Site
 
 import Control.Applicative((<$>))
 import Extra.SSH (sshVerify)
+import Network.URI (URIAuth(..))
 import System.Archive.Prune (prune)
 import System.Archive.UpdateMirror
 import System.Environment (getArgs, withArgs)
@@ -23,16 +24,17 @@ import System.IO (hPutStr, hPutStrLn, stderr)
 
 data BackupTarget =
   BackupTarget
-  { app :: String  -- ^ Where in /srv are the site files stored?
-  , user :: String -- ^ What user should we use to log into the server?
-  , host :: String -- ^ What host is the server on?
-  , keep :: Int    -- ^ Maximum number of backups to keep.
+  { keep :: Int    -- ^ Maximum number of backups to keep.
+  , app :: String  -- ^ Where below top are the site files stored?
+  , auth :: URIAuth -- ^ Authorization info for accessing the server
+  , localTop :: FilePath
+  , remoteTop :: FilePath
   }
 
 -- main = backup (BackupTarget {app = "seereason-production", user = "upload", host = "seereason.com" }
 
 local :: BackupTarget -> FilePath
-local target = "/srv/backups" </> app target
+local target = localTop target </> app target
 
 -- Should be equivalent to "%Y-%m-%d_%H:%M:%S", but this seems to work
 -- better when passed to the prune function and used to parse a date.
@@ -44,8 +46,8 @@ backup target =
      case init of
        True -> exitWith ExitSuccess
        False ->
-         do hPutStrLn stderr ("Authenticating connection with " ++ user target ++ "@" ++ host target ++ "...")
-            ok <- sshVerify (user target ++ "@" ++ host target) Nothing
+         do hPutStrLn stderr ("Authenticating connection with " ++ pretty (auth target) ++ "...")
+            ok <- sshVerify (pretty (auth target)) Nothing
             case ok of
               False ->
                 do hPutStr stderr "Authentication failed"
@@ -54,10 +56,13 @@ backup target =
                 do withArgs ["--exclude", "open.lock", app target] (updateMirrorMain (rsyncTargets target))
                    prune format (local target) (app target ++ "-") (keep target)
 
+pretty auth =
+    uriUserInfo auth ++ uriRegName auth ++ uriPort auth
+
 rsyncTargets :: BackupTarget -> [Target]
 rsyncTargets target =
     [ RsyncTarget { prettyName = app target
-                  , src = [ user target ++ "@" ++ host target ++ ":/srv/" ++ app target ]
+                  , src = [ pretty (auth target) ++ ":" ++ remoteTop target </> app target ]
                   , dest = local target ++ "/"
                   , config = genericConfig (app target) format
                   , options = [Rsync "--progress", Rsync "--stats"]
