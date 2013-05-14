@@ -13,6 +13,7 @@ module System.Archive.Site
        ) where
 
 import Control.Applicative((<$>))
+import Control.Concurrent (threadDelay)
 import Extra.SSH (sshVerify)
 import Network.URI (URIAuth(..))
 import System.Archive.Prune (prune)
@@ -29,6 +30,11 @@ data BackupTarget =
   , auth :: URIAuth -- ^ Authorization info for accessing the server
   , localTop :: FilePath
   , remoteTop :: FilePath
+  , delay :: Int -- ^ Wait for this many microseconds before beginning
+                 -- backup.  This allows backups to be staggered even
+                 -- if they are all launched at the same time by a
+                 -- cron daemon.
+  , nice :: Int  -- ^ Reduce the process priority
   }
 
 -- main = backup (BackupTarget {app = "seereason-production", user = "upload", host = "seereason.com" }
@@ -46,7 +52,8 @@ backup target =
      case init of
        True -> exitWith ExitSuccess
        False ->
-         do hPutStrLn stderr ("Authenticating connection with " ++ pretty (auth target) ++ "...")
+         do threadDelay (delay target)
+            hPutStrLn stderr ("Authenticating connection with " ++ pretty (auth target) ++ "...")
             ok <- sshVerify (pretty (auth target)) Nothing
             case ok of
               False ->
@@ -65,6 +72,6 @@ rsyncTargets target =
                   , src = [ pretty (auth target) ++ ":" ++ remoteTop target </> app target ]
                   , dest = local target ++ "/"
                   , config = genericConfig (app target) format
-                  , options = [Rsync "--progress", Rsync "--stats"]
+                  , options = [Rsync "--progress", Rsync "--stats", Nice (nice target)]
                   }
     ]

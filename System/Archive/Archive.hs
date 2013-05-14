@@ -136,6 +136,7 @@ data Option
     | Current		-- ^Unimplemented
     | Prune String	-- ^Unimplemented
     | -} Rsync String	-- ^Pass one or more additional arguments to the rsync sub-process
+    | Nice Int          -- ^Decrease priority of rsync process
     | NoUpdateSymlink
     deriving (Eq, Show)
 
@@ -267,7 +268,7 @@ update config options src snapshotDir (Found mPrev inprogress _obsolete) dists =
 
 -- In addition to valid URIs, rsync also accepts user@host:<path>.
 parseRsync :: FilePath -> Maybe URI
-parseRsync src = 
+parseRsync src =
     maybe parseSSH Just (parseURI src)
     where
       parseSSH =
@@ -281,14 +282,15 @@ parseRsync src =
                                                                , uriPort = "" })})
                   _ -> Nothing
             _ -> Nothing
-          
+
 rsync :: [Option] -> [FilePath] -> FilePath -> FilePath -> IO (ExitCode, Failing UpdateResult)
 rsync options linkDests src dest =
     do createDirectoryIfMissing True dest
        absLinkDests <- mapM realpath linkDests
-       let cmd = "rsync"
+       let cmd = "nice"
            args =
-            ((map ("--link-dest=" ++) absLinkDests) ++
+            (["--adjustment=" ++ show (niceOption options), "rsync"] ++
+             (map ("--link-dest=" ++) absLinkDests) ++
              (mapMaybe rsyncOption (dropTwoVs options)) ++
              ["-a" -- implies: lptgoD
              , "-HxS"
@@ -317,6 +319,8 @@ rsync options linkDests src dest =
     where
       rsyncOption (Rsync x) = Just x
       rsyncOption _ = Nothing
+      niceOption :: [Option] -> Int
+      niceOption xs = foldr (\ x n -> case x of Nice n' -> n'; _ -> n) 0 xs
       -- The first two -v arguments cause lazyProcessV to reveal more
       -- of the full output of rsync, additional -v arguments are
       -- passed on to rsync.

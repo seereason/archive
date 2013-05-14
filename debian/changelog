@@ -1,3 +1,13 @@
+haskell-archive (1.5) unstable; urgency=low
+
+  * Add a delay field to the BackupTarget type, the number of microseconds
+    to wait after launch before starting the backup.  Because the hourly cron
+    facility launches all jobs at the same time, this allows the jobs to be
+    staggered to reduce the load.
+  * Add a nice field to the BackupTarget type 
+
+ -- David Fox <dsf@seereason.com>  Tue, 14 May 2013 08:40:15 -0700
+
 haskell-archive (1.4) unstable; urgency=low
 
   * Add fields to BackupTarget to specify the local and remote
