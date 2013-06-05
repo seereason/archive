@@ -27,7 +27,7 @@ Library
     old-locale,
     pretty,
     process,
-    process-extras,
+    process-listlike,
     process-progress,
     regex-compat,
     regex-posix,

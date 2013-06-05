@@ -1,3 +1,9 @@
+haskell-archive (1.5.1) unstable; urgency=low
+
+  * Use process-listlike instead of process-extras.
+
+ -- David Fox <dsf@seereason.com>  Wed, 05 Jun 2013 06:53:01 -0700
+
 haskell-archive (1.5) unstable; urgency=low
 
   * Add a delay field to the BackupTarget type, the number of microseconds
