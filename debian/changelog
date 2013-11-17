@@ -1,3 +1,10 @@
+haskell-archive (1.6) unstable; urgency=low
+
+  * Add a bwLimit field to BackupTarget, which sends a --bwlimint argument
+    to rsync.
+
+ -- David Fox <dsf@seereason.com>  Sun, 17 Nov 2013 09:57:36 -0800
+
 haskell-archive (1.5.1) unstable; urgency=low
 
   * Use process-listlike instead of process-extras.
