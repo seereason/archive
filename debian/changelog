@@ -26,7 +26,7 @@ haskell-archive (1.5) unstable; urgency=low
     to wait after launch before starting the backup.  Because the hourly cron
     facility launches all jobs at the same time, this allows the jobs to be
     staggered to reduce the load.
-  * Add a nice field to the BackupTarget type 
+  * Add a nice field to the BackupTarget type
 
  -- David Fox <dsf@seereason.com>  Tue, 14 May 2013 08:40:15 -0700
 
@@ -91,7 +91,7 @@ haskell-archive (1.2.7) unstable; urgency=low
 
 haskell-archive (1.2.6) unstable; urgency=low
 
-  * Updated haskell-extra:Extra.Help -> haskell-help:Text.Help 
+  * Updated haskell-extra:Extra.Help -> haskell-help:Text.Help
 
  -- Jeremy Shaw <jeremy@n-heptane.com>  Fri, 25 Jul 2008 17:55:55 -0700
 
