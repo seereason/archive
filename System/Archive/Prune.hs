@@ -27,7 +27,11 @@ prune dateFormat baseDirName prefix keep =
              maybe (return ()) rmrf victim >>
              prune dateFormat baseDirName prefix keep)
 
--- |Decide which archives is the least important
+-- |Decide which archives is the least important.  This is done
+-- computing a function to find which archive has the least "distance"
+-- from its two neighbors, adjusted so that the distance between older
+-- archive carries less weight than the distance between newer
+-- archives.
 nextVictim :: String -> FilePath -> String -> IO (Maybe FilePath)
 nextVictim dateFormat baseDirName prefix =
     do paths <- getDirectoryContents baseDirName

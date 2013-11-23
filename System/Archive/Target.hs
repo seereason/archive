@@ -45,6 +45,7 @@ showTarget (RsyncTarget prettyName srcs dest _ options) =
       showOptions opts = mconcat (map showOption opts)
       showOption :: Option -> Elements
       showOption (Rsync str) = text "Rsync " <> cw <> (text str) <> p <> br
+      showOption (Nice num) = text "Nice " <> cw <> (text (show num)) <> p <> br
       showOption NoUpdateSymlink = text "NoUpdateSymlink" <> br
 showTarget (AptTarget prettyName srcs dest _ options dists) =
     (text (prettyName ++ ":")) <> rs Nothing (tp Nothing (text "src: ") <> mconcat (map (\src -> text src <> br) srcs) <>
@@ -57,6 +58,7 @@ showTarget (AptTarget prettyName srcs dest _ options dists) =
       showOptions opts = mconcat (map showOption opts)
       showOption :: Option -> Elements
       showOption (Rsync str) = text "Rsync " <> cw <> (text str) <> p <> br
+      showOption (Nice num) = text "Nice " <> cw <> (text (show num)) <> p <> br
       showOption NoUpdateSymlink = text "NoUpdateSymlink" <> br
       showDists :: [(String, [String])] -> Elements
       showDists dists = mconcat (map showDist dists)

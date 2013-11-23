@@ -1,3 +1,12 @@
+haskell-archive (1.7) unstable; urgency=low
+
+  * Add a cleanTime field, which holds a Maybe Int.  This number is the hour
+    of the local time of day during which backup pruning may be performed.
+    It would be nice to limit the speed at which rsync performs file removes,
+    but I don't think that option exists.
+
+ -- David Fox <dsf@seereason.com>  Sat, 23 Nov 2013 06:07:04 -0800
+
 haskell-archive (1.6) unstable; urgency=low
 
   * Add a bwLimit field to BackupTarget, which sends a --bwlimint argument

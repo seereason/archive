@@ -1,3 +1,4 @@
+{-# LANGUAGE PackageImports #-}
 -- |Script to do an incremental backup of an application.  To make it
 -- automatic the following steps must be taken, an example can be seen
 -- in the creativeprompts package.
@@ -14,7 +15,9 @@ module System.Archive.Site
 
 import Control.Applicative((<$>))
 import Control.Concurrent (threadDelay)
-import Extra.SSH (sshVerify)
+import Control.Monad (when)
+import Data.Time (getZonedTime, {-getCurrentTime, timeToTimeOfDay, utctDayTime,-} todHour, localTimeOfDay, zonedTimeToLocalTime)
+import "Extra" Extra.SSH (sshVerify)
 import Network.URI (URIAuth(..))
 import System.Archive.Prune (prune)
 import System.Archive.UpdateMirror
@@ -25,7 +28,10 @@ import System.IO (hPutStr, hPutStrLn, stderr)
 
 data BackupTarget =
   BackupTarget
-  { keep :: Int    -- ^ Maximum number of backups to keep.
+  { keep :: Int   -- ^ Maximum number of backups to keep after a cleanup.
+  , cleanHour :: Maybe Int
+                   -- ^ What time of day (local) should we do cleanups?  (These are disruptive
+                   -- to the machine running backup because they involve a lot of rm files.)
   , app :: String  -- ^ Where below top are the site files stored?
   , auth :: URIAuth -- ^ Authorization info for accessing the server
   , localTop :: FilePath
@@ -62,7 +68,10 @@ backup target =
                    exitWith (ExitFailure 1)
               True ->
                 do withArgs ["--exclude", "open.lock", app target] (updateMirrorMain (rsyncTargets target))
-                   prune format (local target) (app target ++ "-") (keep target)
+                   -- utcHour <- (todHour . timeToTimeOfDay . utctDayTime) <$> getCurrentTime
+                   localHour <- (todHour . localTimeOfDay . zonedTimeToLocalTime) <$> getZonedTime
+                   when (maybe True (== localHour) (cleanHour target))
+                        (prune format (local target) (app target ++ "-") (keep target))
 
 pretty auth =
     uriUserInfo auth ++ uriRegName auth ++ uriPort auth
