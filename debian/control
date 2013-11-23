@@ -81,26 +81,73 @@ Build-Depends-Indep: ghc-doc
 Package: libghc-archive-dev
 Section: libdevel
 Architecture: any
-Depends: ${haskell:Depends}
-Description: A library for creating hardlinked mirrors/backups
- This package contains the libraries compiled for GHC 6.
+Depends: ${shlibs:Depends}
+         , ${haskell:Depends}
+         , ${misc:Depends}
+Recommends: ${haskell:Recommends}
+Suggests: ${haskell:Suggests}
+Conflicts: ${haskell:Conflicts}
+Provides: ${haskell:Provides}
+Replaces: ${haskell:Replaces}
+Description: A library and programs for creating hardlinked incremental archives or backups
+ Uses rsync, etc to before backups similar to the old timemachine script and the newer 'Time Machine' OS X tool.
+ .
+  Author: David Fox, Jeremy Shaw
+  Upstream-Maintainer: partners@seereason.com
+ .
+ This package provides a library for the Haskell programming language.
+ See http:///www.haskell.org/ for more information on Haskell.
 
 Package: libghc-archive-prof
 Section: libdevel
 Architecture: any
-Depends: ${haskell:Depends}, libghc-archive-dev
-Description: A library for creating hardlinked mirrors/backups
- This package contains the libraries compiled for GHC 6.
+Depends: ${shlibs:Depends}
+         , ${haskell:Depends}
+         , ${misc:Depends}
+Recommends: ${haskell:Recommends}
+Suggests: ${haskell:Suggests}
+Conflicts: ${haskell:Conflicts}
+Provides: ${haskell:Provides}
+Replaces: ${haskell:Replaces}
+Description: A library and programs for creating hardlinked incremental archives or backups
+ Uses rsync, etc to before backups similar to the old timemachine script and the newer 'Time Machine' OS X tool.
+ .
+  Author: David Fox, Jeremy Shaw
+  Upstream-Maintainer: partners@seereason.com
+ .
+ This package provides a library for the Haskell programming language, compiled
+ for profiling.  See http:///www.haskell.org/ for more information on Haskell.
 
 Package: libghc-archive-doc
+Architecture: all
 Section: doc
-Architecture: any
-Depends: ${haskell:Depends}
-Description: A library for creating hardlinked mirrors/backups
- This package contains the documentation.
+Depends: ${shlibs:Depends}
+         , ${haskell:Depends}
+         , ${misc:Depends}
+Recommends: ${haskell:Recommends}
+Suggests: ${haskell:Suggests}
+Conflicts: ${haskell:Conflicts}
+Provides: ${haskell:Provides}
+Replaces: ${haskell:Replaces}
+Description: A library and programs for creating hardlinked incremental archives or backups
+ Uses rsync, etc to before backups similar to the old timemachine script and the newer 'Time Machine' OS X tool.
+ .
+  Author: David Fox, Jeremy Shaw
+  Upstream-Maintainer: partners@seereason.com
+ .
+ This package provides the documentation for a library for the Haskell
+ programming language.
+ See http:///www.haskell.org/ for more information on Haskell.
 
 Package: archive
 Section: admin
 Architecture: any
-Description: Tool for making hardlinked mirrors/backups
- This package contains and command line executable. 
+Depends: ${shlibs:Depends}
+         , ${haskell:Depends}
+         , ${misc:Depends}
+Recommends: ${haskell:Recommends}
+Suggests: ${haskell:Suggests}
+Conflicts: ${haskell:Conflicts}
+Provides: ${haskell:Provides}
+Replaces: ${haskell:Replaces}
+Description: No description available.
