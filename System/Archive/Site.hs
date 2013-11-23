@@ -1,4 +1,4 @@
-{-# LANGUAGE PackageImports #-}
+{-# LANGUAGE PackageImports, RecordWildCards #-}
 -- |Script to do an incremental backup of an application.  To make it
 -- automatic the following steps must be taken, an example can be seen
 -- in the creativeprompts package.
@@ -29,8 +29,9 @@ import System.IO (hPutStr, hPutStrLn, stderr)
 data BackupTarget =
   BackupTarget
   { keep :: Int   -- ^ Maximum number of backups to keep after a cleanup.
-  , cleanHour :: Maybe Int
-                   -- ^ What time of day (local) should we do cleanups?  (These are disruptive
+  , backupHour :: Int -> Bool -- ^ Predicate determining which hours of the day (local time) backups will be performed
+  , cleanHour :: Int -> Bool
+                   -- ^ What hour of day (local time) should we do cleanups?  (These are disruptive
                    -- to the machine running backup because they involve a lot of rm files.)
   , app :: String  -- ^ Where below top are the site files stored?
   , auth :: URIAuth -- ^ Authorization info for accessing the server
@@ -54,24 +55,25 @@ local target = localTop target </> app target
 format = "%F_%T"
 
 backup :: BackupTarget -> IO ()
-backup target =
-  do init <- elem "--initialize" <$> getArgs
+backup target@(BackupTarget{..}) =
+  do -- utcHour <- (todHour . timeToTimeOfDay . utctDayTime) <$> getCurrentTime
+     localHour <- (todHour . localTimeOfDay . zonedTimeToLocalTime) <$> getZonedTime
+     init <- elem "--initialize" <$> getArgs
      case init of
        True -> exitWith ExitSuccess
        False ->
-         do threadDelay (delay target)
-            hPutStrLn stderr ("Authenticating connection with " ++ pretty (auth target) ++ "...")
-            ok <- sshVerify (pretty (auth target)) Nothing
+         do threadDelay delay
+            hPutStrLn stderr ("Authenticating connection with " ++ pretty auth ++ "...")
+            ok <- sshVerify (pretty auth) Nothing
             case ok of
               False ->
                 do hPutStr stderr "Authentication failed"
                    exitWith (ExitFailure 1)
               True ->
-                do withArgs ["--exclude", "open.lock", app target] (updateMirrorMain (rsyncTargets target))
-                   -- utcHour <- (todHour . timeToTimeOfDay . utctDayTime) <$> getCurrentTime
-                   localHour <- (todHour . localTimeOfDay . zonedTimeToLocalTime) <$> getZonedTime
-                   when (maybe True (== localHour) (cleanHour target))
-                        (prune format (local target) (app target ++ "-") (keep target))
+                do when (backupHour localHour)
+                        (withArgs ["--exclude", "open.lock", app] (updateMirrorMain (rsyncTargets target)))
+                   when (cleanHour localHour)
+                        (prune format (local target) (app ++ "-") keep)
 
 pretty auth =
     uriUserInfo auth ++ uriRegName auth ++ uriPort auth
