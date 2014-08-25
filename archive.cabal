@@ -11,6 +11,10 @@ Maintainer:      partners@seereason.com
 Stability:       alpha
 Build-Type:      Simple
 
+flag network-uri
+ Description: Get Network.URI from the network-uri package
+ Default: True
+
 Library
   Build-Depends:
     applicative-extras,
@@ -23,7 +27,6 @@ Library
     filepath,
     help,
     HUnit,
-    network,
     old-locale,
     pretty,
     process,
@@ -35,6 +38,10 @@ Library
     unix,
     Unixutils,
     utf8-string
+  if flag(network-uri)
+    Build-Depends: network-uri >= 2.6
+  else
+    Build-Depends: network < 2.6
   Exposed-Modules:
     System.Archive.Archive,
     System.Archive.Prune,

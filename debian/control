@@ -31,8 +31,8 @@ Build-Depends: debhelper (>= 7.0)
                , libghc-filepath-prof | ghc-prof
                , libghc-help-dev
                , libghc-help-prof
-               , libghc-network-dev
-               , libghc-network-prof
+               , libghc-network-uri-dev
+               , libghc-network-uri-prof
                , libghc-old-locale-dev | ghc
                , libghc-old-locale-prof | ghc-prof
                , libghc-pretty-dev | ghc
@@ -66,7 +66,7 @@ Build-Depends-Indep: ghc-doc
                      , libghc-directory-doc | ghc-doc
                      , libghc-filepath-doc | ghc-doc
                      , libghc-help-doc
-                     , libghc-network-doc
+                     , libghc-network-uri-doc
                      , libghc-old-locale-doc | ghc-doc
                      , libghc-pretty-doc | ghc-doc
                      , libghc-process-doc | ghc-doc
