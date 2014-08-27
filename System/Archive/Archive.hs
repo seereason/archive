@@ -32,7 +32,8 @@ import System.Posix.Files
 import System.Process
 import System.Exit
 import System.Unix.FilePath (realpath)
-import System.Process.Read.Chunks (readProcessChunks, foldOutputsR)
+import System.Process.Read.Chunks (readProcessChunks)
+import System.Process.Read.Convenience (foldOutputsR)
 import Test.HUnit.Base
 import Text.Regex (mkRegex, matchRegex)
 import Text.Regex.Posix ((=~))
