@@ -31,7 +31,6 @@ Library
     pretty,
     process,
     process-listlike >= 0.9,
-    process-progress >= 0.13,
     regex-compat,
     regex-posix,
     time,
