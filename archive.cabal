@@ -30,7 +30,7 @@ Library
     old-locale,
     pretty,
     process,
-    process-listlike >= 0.9,
+    process-extras,
     regex-compat,
     regex-posix,
     time,
