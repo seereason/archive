@@ -39,8 +39,8 @@ Build-Depends: debhelper (>= 7.0)
                , libghc-pretty-prof | ghc-prof
                , libghc-process-dev | ghc
                , libghc-process-prof | ghc-prof
-               , libghc-process-extras-dev
-               , libghc-process-extras-prof
+               , libghc-process-listlike-dev | libghc-process-extras-dev
+               , libghc-process-listlike-prof | libghc-process-extras-prof
                , libghc-regex-compat-dev
                , libghc-regex-compat-prof
                , libghc-regex-posix-dev
@@ -68,7 +68,7 @@ Build-Depends-Indep: ghc-doc
                      , libghc-old-locale-doc | ghc-doc
                      , libghc-pretty-doc | ghc-doc
                      , libghc-process-doc | ghc-doc
-                     , libghc-process-extras-doc
+                     , libghc-process-listlike-doc | libghc-process-extras-doc
                      , libghc-regex-compat-doc
                      , libghc-regex-posix-doc
                      , libghc-time-doc | ghc-doc

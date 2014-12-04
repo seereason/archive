@@ -15,6 +15,10 @@ flag network-uri
  Description: Get Network.URI from the network-uri package
  Default: True
 
+flag listlike
+  Description: Use the process-listlike package rather than process-extras
+  Default: True
+
 Library
   Build-Depends:
     applicative-extras,
@@ -30,13 +34,16 @@ Library
     old-locale,
     pretty,
     process,
-    process-extras,
     regex-compat,
     regex-posix,
     time,
     unix,
     Unixutils,
     utf8-string
+  if flag(listlike)
+    Build-Depends: process-listlike
+  else
+    Build-Depends: process-extras
   if flag(network-uri)
     Build-Depends: network-uri >= 2.6
   else
