@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
+
+import Control.Category ((.))
 import Data.Text (pack)
-import Debian.Debianize (changelog, conflicts, control, debianize, depends, executable, inputChangeLog, installTo,
-                         postInst, postRm, provides, replaces, seereasonDefaultAtoms, sourceFormat, utilsPackageName)
-import Debian.Debianize.ControlFile (homepage, standardsVersion)
-import Debian.Debianize.Types (InstallFile(InstallFile, destDir, destName, execName, sourceDir), Top(Top))
+import Debian.AutoBuilder.Details.CabalInfo (seereasonDefaults)
+import Debian.Debianize
 import Debian.Policy (SourceFormat(Native3), StandardsVersion(StandardsVersion))
 import Debian.Relation (BinPkgName(BinPkgName), Relation(Rel))
+import Prelude hiding ((.))
 
 main :: IO ()
-main = debianize (Top ".") (utilsPackageName (BinPkgName "archive")) seereasonDefaultAtoms
+main = newFlags >>= newCabalInfo >>= evalCabalT (debianize customize >> liftCabal writeDebianization)
+
+customize :: CabalT IO ()
+customize = seereasonDefaults >> (utilsPackageNameBase . debInfo) ~= Just "archive"
