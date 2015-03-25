@@ -17,7 +17,7 @@ import Control.Applicative((<$>))
 import Control.Concurrent (threadDelay)
 import Control.Monad (when)
 import Data.Time (getZonedTime, {-getCurrentTime, timeToTimeOfDay, utctDayTime,-} todHour, localTimeOfDay, zonedTimeToLocalTime)
-import "Extra" Extra.SSH (sshVerify)
+import Extra.SSH (sshVerify)
 import Network.URI (URIAuth(..))
 import System.Archive.Prune (prune)
 import System.Archive.UpdateMirror
