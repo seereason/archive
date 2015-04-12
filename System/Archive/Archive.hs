@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 module System.Archive.Archive 
     ( Option(..)
     , UpdateResult(..)
@@ -27,7 +27,11 @@ import System.Directory
 import System.FilePath
 import System.IO
 import System.IO.Error
+#if MIN_VERSION_time(1,5,0)
+import System.Locale hiding (defaultTimeLocale, rfc822DateFormat)
+#else
 import System.Locale
+#endif
 import System.Posix.Files
 import System.Process (showCommandForUser)
 import System.Exit

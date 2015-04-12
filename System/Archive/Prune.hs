@@ -1,4 +1,5 @@
 -- |Limit the number of incremental backups.
+{-# LANGUAGE CPP #-}
 module System.Archive.Prune
     ( prune
     , nextVictim
@@ -13,7 +14,11 @@ import System.Directory (getDirectoryContents)
 import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath ((</>))
 import System.IO (hPutStr, stderr)
+#if MIN_VERSION_time(1,5,0)
+import Data.Time (defaultTimeLocale)
+#else
 import System.Locale (defaultTimeLocale)
+#endif
 import System.Process (readProcessWithExitCode, showCommandForUser)
 
 -- |Remove backups until we have a certain number left.
