@@ -351,7 +351,7 @@ getSnapshotDirectories nameP dir =
        filterM (liftM isRealDirectory . getFileStatus . (dir </>))  c
     where
       isRealDirectory :: FileStatus -> Bool
-      isRealDirectory fs = all ($ fs) [isDirectory, not . isSymbolicLink ]
+      isRealDirectory fs = all ($ fs) [isDirectory, not . System.Posix.Files.isSymbolicLink ]
 
 -- | file names should short lexagraphically
 categorize :: (FilePath -> Bool) -> (FilePath -> Bool) -> [FilePath] -> ([FilePath], [FilePath], [FilePath])
