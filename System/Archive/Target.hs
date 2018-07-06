@@ -5,6 +5,7 @@ import Control.Exception (try)
 import Control.Monad
 import Data.Monoid (Monoid(..))
 import Data.List
+import Prelude hiding ((<>))
 import qualified Text.PrettyPrint.HughesPJ as D
 import System.Archive.Archive
 -- import System.IO.Error hiding (try)

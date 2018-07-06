@@ -14,7 +14,7 @@
 module Main where
 
 import Control.Monad
---import Data.List
+import Prelude hiding ((<>))
 import System.IO
 --import Data.Maybe
 import System.Environment
