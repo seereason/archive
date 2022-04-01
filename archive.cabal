@@ -23,7 +23,7 @@ Library
     debian >= 2.19,
     mirror >= 1.1.3,
     directory,
-    sr-extra,
+    sr-utils,
     filepath,
     help,
     HUnit,
