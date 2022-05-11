@@ -3,7 +3,7 @@
 -- risk.  It should use a configuration file to set the destination
 -- directory so a malicious user can't pass it arguments to destroy
 -- other parts of the system.
--- 
+--
 -- The command
 --
 --   archive <user>@<host>:<path> <dest>
@@ -44,26 +44,26 @@ opts =
     ]
 
 manpage =
-    Manpage { name	  	= "archive"
-            , sectionNum  	= General
-            , shortDesc	  	= text "create incremental backups of directories using rsync and hardlinks."
-            , synopsis	  	= text "archive [options] original backupdir"
-            , description 	= text "Create a backup of " <> i <> text "ORIGINAL" <> p <> text " in " <> i <> text "BACKUPDIR" <> p <> 
+    Manpage { name              = "archive"
+            , sectionNum        = General
+            , shortDesc         = text "create incremental backups of directories using rsync and hardlinks."
+            , synopsis          = text "archive [options] original backupdir"
+            , description       = text "Create a backup of " <> i <> text "ORIGINAL" <> p <> text " in " <> i <> text "BACKUPDIR" <> p <>
                                   text" in a directory whose name is todays date. \
                                        \The original may be on a remote machine. \
                                        \This is achieved without wasting disk space on unchanged files using \
                                        \a simple incremental backup technique I read about somewhere using " <>
-                                       cw <> text "cp -al" <> 
+                                       cw <> text "cp -al" <>
                                        p <> text" to create a hard linked copy of the previous backup and rsync \
                                        \to modify that copy into a copy of the current directory.  It does use \
                                        \a lot of inodes, but I haven't run out yet on Reiser 3."
-            , options		= Just opts
-            , extraSections	= Nothing
-            , files		= Nothing
-            , environment	= Nothing
-            , diagnostics	= Nothing
-            , bugs		= Nothing
-            , authors		= Just [ ("David Fox","david@seereason.org")
+            , options           = Just opts
+            , extraSections     = Nothing
+            , files             = Nothing
+            , environment       = Nothing
+            , diagnostics       = Nothing
+            , bugs              = Nothing
+            , authors           = Just [ ("David Fox","david@seereason.org")
                                        , ("Jeremy Shaw", "jeremy@n-heptane.com")
                                        ]
             , seeAlso = Nothing
@@ -82,9 +82,8 @@ main =
        when ("--dump-man-page" `elem` args) (dumpManPage manpage)
        case parseOptions args of
          (Left e) -> hPutStrLn stderr e >>
-                    usage manpage >>= hPutStrLn stderr >> 
+                    usage manpage >>= hPutStrLn stderr >>
                     exitFailure
          (Right (options, original, backup)) ->
              do archive (genericConfig "snapshot" "%Y-%m-%d") options original backup []
                 return ()
-      

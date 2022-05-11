@@ -9,7 +9,7 @@ import Control.Monad (when)
 import Data.Function (on)
 import Data.List (sortBy, stripPrefix)
 import Data.Maybe (mapMaybe)
-import Data.Time (UTCTime, NominalDiffTime, parseTime, formatTime, diffUTCTime, zonedTimeToUTC)
+import Data.Time (UTCTime, NominalDiffTime, parseTimeM, formatTime, diffUTCTime, zonedTimeToUTC)
 import System.Directory (getDirectoryContents)
 import System.Exit (ExitCode(ExitSuccess))
 import System.FilePath ((</>))
@@ -63,7 +63,7 @@ nextVictim dateFormat baseDirName prefix =
 timeFromPath :: String -> FilePath -> FilePath -> Maybe UTCTime
 timeFromPath dateFormat prefix path =
     stripPrefix prefix path >>=
-    parseTime defaultTimeLocale dateFormat >>=
+    parseTimeM True defaultTimeLocale dateFormat >>=
     return . zonedTimeToUTC
 
 -- |Remove a directory and its contents.
