@@ -81,8 +81,10 @@ archiveTarget _ target | null (src target) =
     return $ Left (userError $ "target " ++ (prettyName target) ++ " does not include any sources")
 archiveTarget extraOptions (RsyncTarget _prettyName (src:_) dest config options) =
     try (archive config (options ++ extraOptions) src dest [])
+archiveTarget extraOptions (RsyncTarget _prettyName [] dest config options) = error "RsyncTarget"
 archiveTarget extraOptions (AptTarget   _prettyName (src:_) dest config options dists) =
     try (archive config (options ++ extraOptions) src dest dists)
+archiveTarget extraOptions (AptTarget   _prettyName [] dest config options dists) = error "AptTarget"
 
 ppResults :: [(Target, Either IOError (Failing UpdateResult))] -> D.Doc
 ppResults = D.vcat . map ppResult

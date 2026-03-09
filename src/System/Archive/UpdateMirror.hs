@@ -1,11 +1,10 @@
-module System.Archive.UpdateMirror 
+module System.Archive.UpdateMirror
     ( updateMirrorMain
     , Option(..)
     , Target(..)
     , Config(..)
     , genericConfig
-    ) 
-    where
+    ) where
 
 import Control.Monad
 import Data.List
@@ -20,7 +19,7 @@ import System.Archive.Target as T
 -- * General Stuff
 
 manpage progName targets =
-    Manpage { name		= progName 
+    Manpage { name		= progName
             , sectionNum	= General
             , shortDesc		= text "tool to keep mirrors of various repositories up to date."
             , synopsis		= text (progName ++ " TARGET...")
@@ -65,9 +64,9 @@ parseOptions targets args =
          (extraOptions, tgts@(_:_), []) ->
              case tgts \\ (map prettyName targets) of
                [] -> Right (concat extraOptions, tgts)
-               unknownTargets -> Left $ (if (singleton unknownTargets) 
-                                        then "Unrecognized target: " 
-                                        else "Unrecognized targets: ") ++ 
+               unknownTargets -> Left $ (if (singleton unknownTargets)
+                                        then "Unrecognized target: "
+                                        else "Unrecognized targets: ") ++
                                  show unknownTargets
          (_, [], errors) -> Left $ concat $ "You must specify one or more TARGETs.\n" : errors
          (_, _, errors) -> Left $ concat $ errors
@@ -76,10 +75,10 @@ parseOptions targets args =
       singleton _ = False
 
 updateMirrorMain :: [Target] -> IO ()
-updateMirrorMain targets = 
+updateMirrorMain targets =
     do args <- getArgs
        progName <- getProgName
-       when ("--dump-man-page" `elem` args) (dumpManPage (manpage progName targets))
+       when ("--help" `elem` args) (dumpManPage (manpage progName targets))
        case parseOptions targets args of
          (Left e) -> do hPutStrLn stderr e
                         hPutStrLn stderr =<< usage (manpage progName targets)

@@ -1,5 +1,5 @@
 Name:            archive
-Version:         1.7.1
+Version:         1.8
 Cabal-Version:   >= 1.8
 Category:        System
 Synopsis:        A library and programs for creating hardlinked incremental archives or backups

@@ -43,6 +43,7 @@ data BackupTarget =
                  -- cron daemon.
   , nice :: Int  -- ^ Reduce the process priority
   , bwLimit :: Maybe Int -- ^ Tell rsync to limit the bandwidth to this many KBytes/sec
+  , rsync :: [Option]
   }
 
 -- main = backup (BackupTarget {app = "seereason-production", user = "upload", host = "seereason.com" }
@@ -71,7 +72,7 @@ backup target@(BackupTarget{..}) =
                    exitWith (ExitFailure 1)
               True ->
                 do when (backupHour localHour)
-                        (withArgs ["--exclude", "open.lock", app] (updateMirrorMain (rsyncTargets target)))
+                        (withArgs ["--exclude", "open.lock", {-"--exclude", "image-path",-} app] (updateMirrorMain (rsyncTargets target)))
                    when (cleanHour localHour)
                         (prune format (local target) (app ++ "-") keep)
 
@@ -84,6 +85,13 @@ rsyncTargets target =
                   , src = [ pretty (auth target) ++ ":" ++ remoteTop target </> app target ]
                   , dest = local target ++ "/"
                   , config = genericConfig (app target) format
-                  , options = [Rsync "--progress", Rsync "--stats", Nice (nice target)] ++ maybe [] (\ n -> [Rsync ("--bwlimit=" ++ show n)]) (bwLimit target)
+                  , options = [Rsync "--progress",
+                               Rsync "--stats",
+                               Nice (nice target)] ++
+                              rsync target ++
+                              maybe
+                                []
+                                (\ n -> [Rsync ("--bwlimit=" ++ show n)])
+                                (bwLimit target)
                   }
     ]
